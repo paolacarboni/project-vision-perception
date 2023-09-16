@@ -28,7 +28,7 @@ def carica_immagine(canvas):
         canvas.create_image(0, 0, anchor=tk.NW, image=img)
         canvas.image = img
 
-def frame_top():
+def frame_top(finestra):
     frame_superiore = tk.Frame(finestra)
     frame_superiore.pack(side="top", fill="x")
 
@@ -45,7 +45,7 @@ def frame_top():
     pulsante_esegui = tk.Button(frame_superiore, text="Esegui Operazione", command=lambda: esegui_operazione(opzioni_var))
     pulsante_esegui.pack(pady=10)
 
-def frame_bottom():
+def frame_bottom(finestra):
     frame_inferiore = tk.Frame(finestra)
     frame_inferiore.pack(side="bottom", fill="both", expand=True, padx=10, pady=10)
 
@@ -64,12 +64,13 @@ def frame_bottom():
     pulsante_carica_immagine = tk.Button(frame_sinistra, text="Carica Immagine", command = lambda: carica_immagine(canvas_left))
     pulsante_carica_immagine.pack(pady=10)
 
-# Crea la finestra principale
-finestra = tk.Tk()
-finestra.title("Interfaccia per Operazioni di Immagini")
+def window_ex():
+    # Crea la finestra principale
+    finestra = tk.Tk()
+    finestra.title("Interfaccia per Operazioni di Immagini")
 
-frame_top()
-frame_bottom()
+    frame_top(finestra)
+    frame_bottom(finestra)
 
-# Avvia l'applicazione
-finestra.mainloop()
+    # Avvia l'applicazione
+    finestra.mainloop()
