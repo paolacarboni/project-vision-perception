@@ -47,8 +47,8 @@ def main():
         net = loop_input("Insert network to train (text or gan): ", is_in, "Error: The network must be \"text\" or \"gan\".", ["text", "gan"])
         if net == "gan":
             res = int(loop_input("Insert GAN resolution (32, 64, 128, 256): ", is_in, "Error: bad resolution.", ["32", "64", "128", "256"]))
-        batch_size = loop_input("Batch size: ", is_int, "Error: batch size must be a real number.", 0)
-        epoch = loop_input("Epoches: ", is_int, "Error: batch size must be a real number.", 0)
+        batch_size = int(loop_input("Batch size: ", is_int, "Error: batch size must be a real number.", 0))
+        epoch = int(loop_input("Epoches: ", is_int, "Error: batch size must be a real number.", 0))
         if (net == "gan"):
             train_gan(res, epoch=epoch, batch_size=batch_size)
     elif args[0] == '3':

@@ -1,48 +1,5 @@
-import torch
-from torchvision import transforms
-from torchvision import datasets
-from PIL import Image, ImageFilter
 import os
-
-PARAMETERS_FILE = os.path.join(os.path.dirname(__file__), 'parameters.txt')
-
-train_textures_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/training/textures')
-train_masks_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/training/masks')
-test_textures_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/test/textures')
-test_masks_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/test/masks')
-
-new_train_textures_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/training/textures')
-new_train_masks_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/training/masks')
-new_test_textures_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/test/textures')
-new_test_masks_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/test/masks')
-
-def do_dataloader(folder: str, batch_size=32, shuffle=True, tran = []):
-
-    toTransform = [
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ]
-    for i in tran:
-        toTransform.append(i)
-    transform = transforms.Compose(toTransform)
-
-    path = folder
-    try:
-        dataset = datasets.ImageFolder(root=path, transform=transform)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
-    except Exception as e:
-        print("Error: srcs/neuralNetworks/textAwareMultiGan/training/datasets.py: do_dataloader: ", e)
-        exit(1)
-
-    return dataloader
-
-#Questa funzione crea i dataloader per il train e il test
-def make_dataloaders(batch_size=32, shuffle=True):
-    dl_train_text = do_dataloader(new_train_textures_path, batch_size=batch_size, shuffle=shuffle)
-    dl_train_mask = do_dataloader(new_train_masks_path, batch_size=batch_size, shuffle=shuffle, tran = [transforms.Grayscale(num_output_channels=1)])
-    dl_test_text = do_dataloader(new_test_textures_path, batch_size=batch_size, shuffle=shuffle)
-    dl_test_mask = do_dataloader(new_test_masks_path, batch_size=batch_size, shuffle=shuffle, tran = [transforms.Grayscale(num_output_channels=1)])
-    return dl_train_text, dl_train_mask, dl_test_text, dl_test_mask
+from PIL import Image, ImageFilter
 
 
 #Questa funzione resize ogni immagine presente nella cartella oldpath in 4 immagini di dimensioni
@@ -54,8 +11,8 @@ def create_pyramid_images(old_path, new_path, blur=False):
             complete_path = os.path.join(new_path, file)
             os.remove(complete_path)
     else:
-        print("Error: srcs/neuralNetworks/textAwareMultiGan/training/datasets.py: create_pyramid_images: Folder not found: {}", new_path)
-        exit(0)
+        error = f"Error: {__file__}: create_pyramid_images: Folder not found: {new_path}"
+        raise error
 
     if os.path.exists(old_path):
         folder = os.listdir(old_path)
@@ -88,11 +45,26 @@ def create_pyramid_images(old_path, new_path, blur=False):
             except Exception as e:
                 pass
     else:
-        print("Folder not found: {}", old_path)
+        error = f'Error: {__file__}: create_pyrimid_images: Folder not found: {old_path}'
+        raise error
 
 
-def create_datasets():
-    create_pyramid_images(train_textures_path, new_train_textures_path + '/data', True)
-    create_pyramid_images(train_masks_path, new_train_masks_path + '/data')
-    create_pyramid_images(test_textures_path, new_test_textures_path + '/data', True)
-    create_pyramid_images(test_masks_path, new_test_masks_path + '/data')
+def create_datasets(old_datasets_path, new_datasets_path):
+
+    train_textures_path = old_datasets_path + '/training/textures'
+    train_masks_path = old_datasets_path + '/training/masks'
+    test_textures_path = old_datasets_path + '/test/textures'
+    test_masks_path = old_datasets_path + '/training/masks'
+
+    new_train_textures_path = new_datasets_path + '/training/textures'
+    new_train_masks_path = new_datasets_path + '/training/masks'
+    new_test_textures_path = new_datasets_path + '/test/textures'
+    new_test_masks_path = new_datasets_path + '/training/masks'
+
+    try:
+        create_pyramid_images(train_textures_path, new_train_textures_path + '/data', True)
+        create_pyramid_images(train_masks_path, new_train_masks_path + '/data')
+        create_pyramid_images(test_textures_path, new_test_textures_path + '/data', True)
+        create_pyramid_images(test_masks_path, new_test_masks_path + '/data')
+    except Exception as e:
+        raise e

@@ -19,4 +19,4 @@ run:
 clean:
 	rm	-rf __pycache__ *.pyc
 	rm	-rf */__pycache__ *.pyc
-	find . -name "*.gitkeep" -type f -delete
+	find . -type d -name __pycache__ -exec rm -r {} \;

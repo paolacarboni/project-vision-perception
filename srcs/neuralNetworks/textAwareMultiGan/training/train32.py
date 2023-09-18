@@ -7,7 +7,7 @@ from ..training.utils import epochCollector
 adversarial_loss = nn.BCELoss()
 pixelwise_loss = nn.L1Loss()
 
-def epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mask, batch_size=32, train=True):
+def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mask, batch_size=32, train=True):
     for i, data in enumerate(dataloader_texture, 0):
         x_mask, _ = next(iter(dataloader_mask))
         x_mask = x_mask[:, : , 0:32, 0:32]
@@ -54,6 +54,9 @@ def epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mas
         if train:
             lossG.backward()
             optimizerG.step()
+        
+        if i % 10 == 0:
+            print('i{}/{} last mb D(x)={:.4f} D(G(z))={:.4f}'.format(i, len(dataloader_texture), lossD.mean().item(), lossG.mean().item()))
 
     return lossD.mean().item(), lossG.mean().item(), x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
 
@@ -67,12 +70,12 @@ def train_32(discriminator, generators, optimizerD, optimizerG, dataloaders, num
     test_collector : epochCollector = epochCollector()
 
     for epoch in range(num_epochs):
-        lossD_train, lossG_train, imgs_gen, imgs_real, imgs_mask = epoch(G_32, D_32, optimizerG, optimizerD, dataloaders[0][0], dataloaders[0][1], train=True, batch_size=batch_size)
+        lossD_train, lossG_train, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[0][0], dataloaders[0][1], train=True, batch_size=batch_size)
         print('Train: e{} D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, lossD_train, lossG_train))
         training_collector.append_losses(lossD_train, lossG_train)
         training_collector.append_imgs(imgs_gen, imgs_real, imgs_mask)
 
-        lossD_test, lossG_test, imgs_gen, imgs_real, imgs_mask = epoch(G_32, D_32, optimizerG, optimizerD, dataloaders[1][0], dataloaders[1][1], train=False, batch_size=batch_size)
+        lossD_test, lossG_test, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[1][0], dataloaders[1][1], train=False, batch_size=batch_size)
         print('Test:  e{} D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, lossD_test, lossG_test))
         test_collector.append_losses(lossD_test, lossG_test)
         test_collector.append_imgs(imgs_gen, imgs_real, imgs_mask)
