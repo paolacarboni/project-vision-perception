@@ -61,28 +61,32 @@ def create_pyramid_images(old_path, new_path, blur=False):
         folder = os.listdir(old_path)
         for i in folder:
             width, height = 512, 512
-            result_image = Image.new('RGB', (width, height))
 
-            image = Image.open(old_path + '/' + i)
-            image_256 = image.resize((256, 256))
-            result_image.paste(image_256, (0, 224))
+            try:
+                image = Image.open(old_path + '/' + i)
+                result_image = Image.new('RGB', (width, height))
 
-            if (blur):
-                image_256 = image_256.filter(ImageFilter.GaussianBlur(radius=2.0))
-            image_128 = image_256.resize((128, 128))
-            result_image.paste(image_128, (0, 96))
+                image_256 = image.resize((256, 256))
+                result_image.paste(image_256, (0, 224))
 
-            if (blur):
-                image_128 = image_128.filter(ImageFilter.GaussianBlur(radius=2.0))
-            image_64 = image_128.resize((64, 64))
-            result_image.paste(image_64, (0, 32))
+                if (blur):
+                    image_256 = image_256.filter(ImageFilter.GaussianBlur(radius=2.0))
+                image_128 = image_256.resize((128, 128))
+                result_image.paste(image_128, (0, 96))
 
-            if (blur):
-                image_64 = image_64.filter(ImageFilter.GaussianBlur(radius=2.0))
-            image_32 = image_64.resize((32, 32))
-            result_image.paste(image_32, (0, 0))
+                if (blur):
+                    image_128 = image_128.filter(ImageFilter.GaussianBlur(radius=2.0))
+                image_64 = image_128.resize((64, 64))
+                result_image.paste(image_64, (0, 32))
 
-            result_image.save(new_path + '/' + i, 'PNG')
+                if (blur):
+                    image_64 = image_64.filter(ImageFilter.GaussianBlur(radius=2.0))
+                image_32 = image_64.resize((32, 32))
+                result_image.paste(image_32, (0, 0))
+
+                result_image.save(new_path + '/' + i, 'PNG')
+            except Exception as e:
+                pass
     else:
         print("Folder not found: {}", old_path)
 
