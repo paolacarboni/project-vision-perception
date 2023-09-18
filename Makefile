@@ -7,6 +7,9 @@ install:
 	$(PIP) install	-r	requirements.txt
 	$(PIP) install --upgrade -r requirements.txt
 
+datasets:
+	$(PYTHON) srcs/main.py 3
+
 train:
 	$(PYTHON) srcs/main.py 2
 

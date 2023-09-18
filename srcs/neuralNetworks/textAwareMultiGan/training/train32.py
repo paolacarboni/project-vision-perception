@@ -1,9 +1,8 @@
 import torch
-import neuralNetworks as nn
-from asyncio.windows_events import NULL
-from definitions.patchGanDiscriminator import PatchGANDiscriminator
-from definitions.generator32 import Generator32
-from training.utils import epochCollector
+import torch.nn as nn
+from ..definitions.patchGanDiscriminator import PatchGANDiscriminator
+from ..definitions.generator32 import Generator32
+from ..training.utils import epochCollector
 
 adversarial_loss = nn.BCELoss()
 pixelwise_loss = nn.L1Loss()

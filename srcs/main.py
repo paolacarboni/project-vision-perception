@@ -1,6 +1,7 @@
 import sys
 from interface import window_ex
-
+from neuralNetworks.textAwareMultiGan.training.train import train_gan
+from neuralNetworks.textAwareMultiGan.training.datasets import create_datasets
 def is_int(string: str, *args):
     try:
         num = int(string)
@@ -22,7 +23,9 @@ def loop_input(header: str, checkInput, error, args):
         try:
             output = input(header)
             output = output.casefold()
-            if output == "exit" or checkInput(output, args):
+            if output == "exit":
+                exit(0)
+            if checkInput(output, args):
                 flag = 0
             elif output == "":
                 pass
@@ -42,15 +45,17 @@ def main():
         window_ex()
     elif args[0] == '2':
         net = loop_input("Insert network to train (text or gan): ", is_in, "Error: The network must be \"text\" or \"gan\".", ["text", "gan"])
-        if net == "exit":
-            exit(0)
         if net == "gan":
-            res = loop_input("Insert GAN resolution (32, 64, 128, 256 or all): ", is_in, "Error: bad resolution.", ["32", "64", "128", "256", "all"])
-            if res == "exit":
-                exit(0)
+            res = int(loop_input("Insert GAN resolution (32, 64, 128, 256): ", is_in, "Error: bad resolution.", ["32", "64", "128", "256"]))
         batch_size = loop_input("Batch size: ", is_int, "Error: batch size must be a real number.", 0)
-        if batch_size == "exit":
-            exit(0)
+        epoch = loop_input("Epoches: ", is_int, "Error: batch size must be a real number.", 0)
+        if (net == "gan"):
+            train_gan(res, epoch=epoch, batch_size=batch_size)
+    elif args[0] == '3':
+        flag = loop_input("Please note that all images in resrcs will be deleted. Continue? (yes), (no): ", is_in, "Exit to exit", ["yes", "y", "no", "n"])
+        if flag == "yes" or "y":
+            create_datasets()
+
     return 0
 
 

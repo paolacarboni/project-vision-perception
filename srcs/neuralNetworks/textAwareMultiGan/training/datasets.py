@@ -4,15 +4,17 @@ from torchvision import datasets
 from PIL import Image, ImageFilter
 import os
 
-train_textures_path = 'resrcs\datasets\textAwareMultiGan\training\textures'
-train_masks_path = 'resrcs\datasets\textAwareMultiGan\training\masks'
-test_textures_path = 'resrcs\datasets\textAwareMultiGan\test\textures'
-test_masks_path = 'resrcs\datasets\textAwareMultiGan\test\masks'
+PARAMETERS_FILE = os.path.join(os.path.dirname(__file__), 'parameters.txt')
 
-new_train_textures_path = 'srcs\datasets\textAwareMultiGan\training\textures\data'
-new_train_masks_path = 'srcs\datasets\textAwareMultiGan\training\masks\data'
-new_test_textures_path = 'srcs\datasets\textAwareMultiGan\test\textures\data'
-new_test_masks_path = 'srcs\datasets\textAwareMultiGan\test\masks\data'
+train_textures_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/training/textures')
+train_masks_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/training/masks')
+test_textures_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/test/textures')
+test_masks_path = os.path.join(os.path.dirname(__file__),r'../../../../resrcs/datasets/textAwareMultiGan/test/masks')
+
+new_train_textures_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/training/textures')
+new_train_masks_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/training/masks')
+new_test_textures_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/test/textures')
+new_test_masks_path = os.path.join(os.path.dirname(__file__), r'../../../datasets/textAwareMultiGan/test/masks')
 
 def do_dataloader(folder: str, batch_size=32, shuffle=True, tran = []):
 
@@ -23,10 +25,14 @@ def do_dataloader(folder: str, batch_size=32, shuffle=True, tran = []):
     for i in tran:
         toTransform.append(i)
     transform = transforms.Compose(toTransform)
-    
+
     path = folder
-    dataset = datasets.ImageFolder(root=path, transform=transform)
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    try:
+        dataset = datasets.ImageFolder(root=path, transform=transform)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+    except Exception as e:
+        print("Error: srcs/neuralNetworks/textAwareMultiGan/training/datasets.py: do_dataloader: ", e)
+        exit(1)
 
     return dataloader
 
@@ -48,7 +54,8 @@ def create_pyramid_images(old_path, new_path, blur=False):
             complete_path = os.path.join(new_path, file)
             os.remove(complete_path)
     else:
-        print("Folder not found: {}", new_path)
+        print("Error: srcs/neuralNetworks/textAwareMultiGan/training/datasets.py: create_pyramid_images: Folder not found: {}", new_path)
+        exit(0)
 
     if os.path.exists(old_path):
         folder = os.listdir(old_path)
@@ -81,7 +88,7 @@ def create_pyramid_images(old_path, new_path, blur=False):
 
 
 def create_datasets():
-    create_pyramid_images(train_textures_path, new_train_textures_path)
-    create_pyramid_images(train_masks_path, new_train_masks_path)
-    create_pyramid_images(test_textures_path, new_test_textures_path)
-    create_pyramid_images(test_masks_path, new_test_masks_path)
+    create_pyramid_images(train_textures_path, new_train_textures_path + '/data', True)
+    create_pyramid_images(train_masks_path, new_train_masks_path + '/data')
+    create_pyramid_images(test_textures_path, new_test_textures_path + '/data', True)
+    create_pyramid_images(test_masks_path, new_test_masks_path + '/data')
