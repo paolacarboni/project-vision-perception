@@ -1,0 +1,35 @@
+32
+
+d_lr 0.0001
+g_lr 0.0005
+d_betas (0.5,0.99)
+g_betas (0.5,0.99)
+d_filename
+g_filename
+
+64
+
+d_lr 0.0
+g_lr 0.0
+d_betas 0.0
+g_betas 0.0
+d_filename
+g_filename
+
+128
+
+d_lr 0.0
+g_lr 0.0
+d_betas 0.0
+g_betas 0.0
+d_filename
+g_filename
+
+256
+
+d_lr 0.0
+g_lr 0.0
+d_betas 0.0
+g_betas 0.0
+d_filename
+g_filename
