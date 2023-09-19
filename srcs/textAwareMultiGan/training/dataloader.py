@@ -17,7 +17,7 @@ def do_dataloader(folder: str, batch_size=32, shuffle=True, tran = []):
         dataset = datasets.ImageFolder(root=path, transform=transform)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
     except Exception as e:
-        error = f"Error: {__file__}: do_dataloader: {str(e)}"
+        error = Exception(f"Error: {__file__}: do_dataloader: {str(e)}")
         raise error
 
     return dataloader
