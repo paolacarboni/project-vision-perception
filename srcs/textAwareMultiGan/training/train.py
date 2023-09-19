@@ -7,7 +7,7 @@ from ..training.dataloader import make_dataloaders
 from ..training.loader import load_parameters, load_weights
 from ..training.saver import save_data
 
-def train_gan(res, datasets_path, save_folder, par_file, epoch=1, batch_size=32):
+def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_size=32):
 
     par32: trainParameters = trainParameters()
     par64: trainParameters = trainParameters()
@@ -17,8 +17,8 @@ def train_gan(res, datasets_path, save_folder, par_file, epoch=1, batch_size=32)
     if load_parameters([par32, par64, par128, par256], par_file):
         return(1)
 
-    D_32 = PatchGANDiscriminator(3, 24)
-    G_32 = Generator32()
+    D_32 = PatchGANDiscriminator(3, 24).to(device)
+    G_32 = Generator32().to(device)
 
     if par32.d_filename and load_weights(D_32, par32.d_filename):
         return(1)

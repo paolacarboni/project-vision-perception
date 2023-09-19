@@ -1,5 +1,6 @@
 import sys
 import os
+import torch
 from interface import window_ex
 from textAwareMultiGan.training.train import train_gan
 from textAwareMultiGan.training.datasets import create_datasets
@@ -65,8 +66,9 @@ def main():
         parameter_file = loop_input("Choose the parameter file: ", is_file, "Error: file not found", 0)
         dataset_folder = loop_input("Choose the dataset: ", is_folder, "Error: dataset not found", 0)
         result_folder = loop_input("Choose where save the results: ", is_folder, "Error: folder not found", 0)
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         if (net == "gan"):
-            train_gan(res, dataset_folder, result_folder, parameter_file, epoch=epoch, batch_size=batch_size)
+            train_gan(res, dataset_folder, result_folder, parameter_file, device, epoch=epoch, batch_size=batch_size)
     elif args[0] == '3':
         flag = loop_input("Please note that all images in resrcs will be deleted. Continue? (yes), (no): ", is_in, "Exit to exit", ["yes", "y", "no", "n"])
         if flag == "yes" or "y":
