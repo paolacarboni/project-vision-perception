@@ -25,8 +25,8 @@ def do_dataloader(folder: str, batch_size=32, shuffle=True, tran = []):
 #Questa funzione crea i dataloader per il train e il test
 def make_dataloaders(datasets_path, batch_size=32, shuffle=True):
 
-    train_textures_path = datasets_path + '/training/textures'
-    train_masks_path = datasets_path + '/training/masks'
+    train_textures_path = datasets_path + '/train/textures'
+    train_masks_path = datasets_path + '/train/masks'
     test_textures_path = datasets_path + '/test/textures'
     test_masks_path = datasets_path + '/test/masks'
 

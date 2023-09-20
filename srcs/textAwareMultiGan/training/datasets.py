@@ -44,21 +44,21 @@ def create_pyramid_images(old_path, new_path, blur=False):
             except Exception as e:
                 pass
     else:
-        error = f'Error: {__file__}: create_pyrimid_images: Folder not found: {old_path}'
+        error = Exception(f'Error: {__file__}: create_pyrimid_images: Folder not found: {str(old_path)}')
         raise error
 
 
 def create_datasets(old_datasets_path, new_datasets_path):
 
-    train_textures_path = old_datasets_path + '/training/textures'
-    train_masks_path = old_datasets_path + '/training/masks'
+    train_textures_path = old_datasets_path + '/train/textures'
+    train_masks_path = old_datasets_path + '/train/masks'
     test_textures_path = old_datasets_path + '/test/textures'
-    test_masks_path = old_datasets_path + '/training/masks'
+    test_masks_path = old_datasets_path + '/test/masks'
 
-    new_train_textures_path = new_datasets_path + '/training/textures'
-    new_train_masks_path = new_datasets_path + '/training/masks'
+    new_train_textures_path = new_datasets_path + '/train/textures'
+    new_train_masks_path = new_datasets_path + '/train/masks'
     new_test_textures_path = new_datasets_path + '/test/textures'
-    new_test_masks_path = new_datasets_path + '/training/masks'
+    new_test_masks_path = new_datasets_path + '/test/masks'
 
     try:
         create_pyramid_images(train_textures_path, new_train_textures_path + '/data', True)

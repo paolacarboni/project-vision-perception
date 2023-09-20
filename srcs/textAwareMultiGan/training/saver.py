@@ -18,7 +18,7 @@ def save_imgs(imgs, folder):
                 n+= 1
             m += 1
     except Exception as e:
-        error = f'Error: {__file__}: save_imgs: {str(e)}'
+        error = Exception(f'Error: {__file__}: save_imgs: {str(e)}')
         raise error
 
 def save_data(data: epochCollector, folder_path):
@@ -43,7 +43,7 @@ def save_data(data: epochCollector, folder_path):
         new_mask_folder = os.path.join(folder_path, maskfolder)
         os.makedirs(new_mask_folder, exist_ok=True)
     except Exception as e:
-        error = f"Error: {__file__}: save_data: {str(e)}"
+        error = Exception(f"Error: {__file__}: save_data: {str(e)}")
         print(error)
         raise error
     try:
