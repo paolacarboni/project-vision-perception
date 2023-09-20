@@ -13,7 +13,8 @@ def save_imgs(imgs, folder):
             os.makedirs(new_folder, exist_ok=True)
             for i in f:
                 image_path =  os.path.join(new_folder, 'image_' + str(n) + '.jpg')
-                image = Image.fromarray(i)
+                i_numpy = i.cpu().numpy()
+                image = Image.fromarray(i_numpy)
                 image.save(image_path)
                 n+= 1
             m += 1

@@ -43,7 +43,7 @@ def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloade
         lossD = lossD_real + lossD_fake
 
         if train:
-            lossD.backward()
+            lossD.mean().backward()
             optimizerD.step()
             optimizerG.zero_grad()
 
@@ -56,17 +56,19 @@ def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloade
         lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
         if train:
-            lossG.backward()
+            lossG.mean().backward()
             optimizerG.step()
         
-        total_lossG += lossG.item()
-        total_lossD += lossD.item()
+        total_lossD += lossD.mean().item()
+        total_lossG += lossG.mean().item()
 
         if i % 10 == 0:
             print('i{}/{} last mb D(x)={:.4f} D(G(z))={:.4f}'.format(i, len(dataloader_texture), lossD.mean().item(), lossG.mean().item()))
 
-    print(total_lossG / len(dataloader_texture), lossG.mean().item(), lossG.item())
-    return lossD.mean().item(), lossG.mean().item(), x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
+    total_lossD /= len(dataloader_texture)
+    total_lossG /= len(dataloader_texture)
+
+    return total_lossD, total_lossG, x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
 
 
 def train_32(discriminator, generators, optimizerD, optimizerG, dataloaders, device, num_epochs=10, batch_size=32):
