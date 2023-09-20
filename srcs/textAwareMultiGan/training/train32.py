@@ -8,6 +8,10 @@ adversarial_loss = nn.BCELoss()
 pixelwise_loss = nn.L1Loss()
 
 def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mask, device, batch_size=32, train=True):
+    
+    total_lossG = 0
+    total_lossD = 0
+    
     for i, data in enumerate(dataloader_texture, 0):
         x_mask, _ = next(iter(dataloader_mask))
         x_mask = x_mask[:, : , 0:32, 0:32].to(device)
@@ -55,9 +59,13 @@ def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloade
             lossG.backward()
             optimizerG.step()
         
+        total_lossG += lossG.item()
+        total_lossD += lossD.item()
+
         if i % 10 == 0:
             print('i{}/{} last mb D(x)={:.4f} D(G(z))={:.4f}'.format(i, len(dataloader_texture), lossD.mean().item(), lossG.mean().item()))
 
+    print(total_lossG / len(dataloader_texture), lossG.mean().item(), lossG.item())
     return lossD.mean().item(), lossG.mean().item(), x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
 
 
