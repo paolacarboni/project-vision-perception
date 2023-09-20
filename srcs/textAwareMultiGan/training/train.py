@@ -34,7 +34,7 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
     if res == 32:
         optimizerD = torch.optim.Adam(D_32.parameters(), lr=par32.d_lr, betas=par32.d_betas)
         optimizerG = torch.optim.Adam(G_32.parameters(), lr=par32.g_lr, betas=par32.g_betas)
-        training_collector, test_collector = train_32(D_32, [G_32], optimizerD, optimizerG, dataloaders, batch_size=batch_size, num_epochs=epoch)
+        training_collector, test_collector = train_32(D_32, [G_32], optimizerD, optimizerG, dataloaders, batch_size=batch_size, num_epochs=epoch, device=device)
         try:
             save_data(training_collector, save_folder + "/train")
             save_data(test_collector, save_folder + "/test")

@@ -1,4 +1,5 @@
 import os
+from tqdm import tqdm
 from PIL import Image, ImageFilter
 
 
@@ -15,7 +16,7 @@ def create_pyramid_images(old_path, new_path, blur=False):
 
     if os.path.exists(old_path):
         folder = os.listdir(old_path)
-        for i in folder:
+        for i in tqdm(folder):
             width, height = 512, 512
 
             try:

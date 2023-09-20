@@ -7,16 +7,16 @@ from ..training.utils import epochCollector
 adversarial_loss = nn.BCELoss()
 pixelwise_loss = nn.L1Loss()
 
-def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mask, batch_size=32, train=True):
+def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloader_mask, device, batch_size=32, train=True):
     for i, data in enumerate(dataloader_texture, 0):
         x_mask, _ = next(iter(dataloader_mask))
-        x_mask = x_mask[:, : , 0:32, 0:32]
+        x_mask = x_mask[:, : , 0:32, 0:32].to(device)
         x_real, _ = next(iter(dataloader_texture))
-        x_real = x_real[:, :, 0:32, 0:32]
+        x_real = x_real[:, :, 0:32, 0:32].to(device)
         D_real = D_32(x_real)
 
-        lab_real = torch.full((batch_size, 1, 3, 3), 0.9)
-        lab_fake = torch.full((batch_size, 1, 3, 3), 0.1)
+        lab_real = torch.full((batch_size, 1, 3, 3), 0.9).to(device)
+        lab_fake = torch.full((batch_size, 1, 3, 3), 0.1).to(device)
         
         if train:
             optimizerD.zero_grad()
@@ -28,7 +28,7 @@ def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloade
             masked_image = torch.cat((image, mask), dim=0)
             masked_images.append(masked_image)
 
-        z = torch.stack(masked_images)
+        z = torch.stack(masked_images).to(device)
 
         x_gen = G_32(z)
         D_fake = D_32(x_gen)
@@ -61,7 +61,7 @@ def exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloader_texture, dataloade
     return lossD.mean().item(), lossG.mean().item(), x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
 
 
-def train_32(discriminator, generators, optimizerD, optimizerG, dataloaders, num_epochs=10, batch_size=32):
+def train_32(discriminator, generators, optimizerD, optimizerG, dataloaders, device, num_epochs=10, batch_size=32):
 
     D_32: PatchGANDiscriminator = discriminator
     G_32: Generator32 = generators[0]
