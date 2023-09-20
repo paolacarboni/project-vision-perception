@@ -70,12 +70,12 @@ def train_32(discriminator, generators, optimizerD, optimizerG, dataloaders, dev
     test_collector : epochCollector = epochCollector()
 
     for epoch in range(num_epochs):
-        lossD_train, lossG_train, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[0][0], dataloaders[0][1], train=True, batch_size=batch_size)
+        lossD_train, lossG_train, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[0][0], dataloaders[0][1], device, train=True, batch_size=batch_size)
         print('Train: e{} D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, lossD_train, lossG_train))
         training_collector.append_losses(lossD_train, lossG_train)
         training_collector.append_imgs(imgs_gen, imgs_real, imgs_mask)
 
-        lossD_test, lossG_test, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[1][0], dataloaders[1][1], train=False, batch_size=batch_size)
+        lossD_test, lossG_test, imgs_gen, imgs_real, imgs_mask = exec_epoch(D_32, G_32, optimizerD, optimizerG, dataloaders[1][0], dataloaders[1][1], device, train=False, batch_size=batch_size)
         print('Test:  e{} D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, lossD_test, lossG_test))
         test_collector.append_losses(lossD_test, lossG_test)
         test_collector.append_imgs(imgs_gen, imgs_real, imgs_mask)
