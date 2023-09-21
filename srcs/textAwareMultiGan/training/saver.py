@@ -1,14 +1,17 @@
 import os
 from PIL import Image
 import numpy as np
+import torch
 from torchvision import utils as vutils
 from ..training.utils import epochCollector
 
 def save_imgs(imgs, basename):
     try:
-        for i, batch in imgs:
+        i = 1
+        for batch in imgs:
             filename = basename + '_e' + str(i) + '.jpg'
             vutils.save_image(batch.detach().cpu(), filename, nrow=8, normalize=True, pad_value=0.3)
+            i += 1
     except Exception as e:
         error = Exception(f'Error: {__file__}: save_imgs: {str(e)}')
         raise error

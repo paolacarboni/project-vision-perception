@@ -15,7 +15,7 @@ def is_int(string: str, args):
         return False
 
 def is_in(string: str, args):
-    if string in args:
+    if string.casefold() in args:
         return True
     return False
 
@@ -36,8 +36,7 @@ def loop_input(header: str, checkInput, error, args):
     while flag:
         try:
             output = input(header)
-            output = output.casefold()
-            if output == "exit":
+            if output.casefold() == "exit":
                 exit(0)
             if checkInput(output, args):
                 flag = 0
