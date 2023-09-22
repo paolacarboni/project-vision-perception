@@ -2,3 +2,4 @@ pillow
 torch
 torchvision
 tqdm
+opencv-python

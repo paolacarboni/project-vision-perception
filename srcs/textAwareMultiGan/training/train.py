@@ -3,6 +3,9 @@ import math
 import os
 from ..definitions.gan import GAN
 from ..definitions.gan32 import GAN32
+from ..definitions.gan64 import GAN64
+from ..definitions.gan128 import GAN128
+from ..definitions.gan256 import GAN256
 from ..training.utils import trainParameters, epochCollector
 from ..training.dataloader import make_dataloaders
 from ..training.loader import load_parameters
@@ -43,7 +46,7 @@ def load(gan: GAN, par_file):
     if not gan.res or not gan.get_G():
         raise Exception("Generator not defined")
 
-    res = math.log2(gan.res) - 4
+    res = int(math.log2(gan.res) - 4)
 
     parameters = [
         trainParameters(),
@@ -76,11 +79,11 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
     if (res == 32):
         gan = GAN32(device)
     elif (res == 64):
-        pass
+        gan = GAN64(device)
     elif (res == 128):
-        pass
+        gan = GAN128(device)
     elif (res == 256):
-        pass
+        gan = GAN256(device)
     else:
         return 1
 

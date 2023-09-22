@@ -1,7 +1,25 @@
 import torch
 import torch.nn as nn
-from ..definitions.utils import load_weights, save_nn
 from ..definitions.patchGanDiscriminator import PatchGANDiscriminator
+
+def load_weights(NN, filename):
+    try:
+        d_file = open(filename, 'r')
+        NN.load_state_dict(d_file)
+        return 0
+    except FileNotFoundError:
+        print(f"Error: {__file__}: load_weights: File '{filename}' doesn't exist.")
+    except PermissionError:
+        print(f"Error: {__file__}: load_weights: Permission denied: '{filename}'.")
+    except Exception as e:
+        print(f"Error: {__file__}: load_weights: Error: {e}")
+    return 1
+
+def save_nn(neuralN, filename):
+    try:
+        torch.save(neuralN.state_dict(), filename)
+    except Exception as e:
+        raise e
 
 class GAN():
     def __init__(self, device):
@@ -11,9 +29,9 @@ class GAN():
         self.D = PatchGANDiscriminator(3, 24).to(device)
         self.generators = []
         self.res = 0
-        self.G
-        self.optimizerD
-        self.optimizerG
+        self.G = None
+        self.optimizerD = None
+        self.optimizerG = None
 
     def load_D_weights(self, filename):
         try:
@@ -49,10 +67,10 @@ class GAN():
             return 1
 
     def set_D_optimizer(self, optimizer):
-        self.optimizerD = optimizer.to(self.device)
+        self.optimizerD = optimizer
 
     def set_G_optimizer(self, optimizer):
-        self.optimizerG = optimizer.to(self.device)
+        self.optimizerG = optimizer
 
     def get_D(self):
         return self.D
