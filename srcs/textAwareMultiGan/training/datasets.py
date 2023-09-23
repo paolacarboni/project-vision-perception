@@ -50,23 +50,32 @@ def create_pyramid_images(old_path, new_path, blur=False):
         raise error
 
 
-def create_datasets(old_datasets_path, new_datasets_path):
+def create_datasets(old_datasets_path, new_datasets_path, validation=False):
 
-    train_textures_path = old_datasets_path + '/train/textures'
-    train_masks_path = old_datasets_path + '/train/masks'
-    test_textures_path = old_datasets_path + '/test/textures'
-    test_masks_path = old_datasets_path + '/test/masks'
+    train_textures_path = os.path.join(old_datasets_path, 'train/textures')
+    train_masks_path = os.path.join(old_datasets_path, 'train/masks')
+    test_textures_path = os.path.join(old_datasets_path, 'test/textures')
+    test_masks_path = os.path.join(old_datasets_path, 'test/masks')
 
-    new_train_textures_path = new_datasets_path + '/train/textures'
-    new_train_masks_path = new_datasets_path + '/train/masks'
-    new_test_textures_path = new_datasets_path + '/test/textures'
-    new_test_masks_path = new_datasets_path + '/test/masks'
+    new_train_textures_path = os.path.join(new_datasets_path, 'train/textures')
+    new_train_masks_path = os.path.join(new_datasets_path, 'train/masks')
+    new_test_textures_path = os.path.join(new_datasets_path, 'test/textures')
+    new_test_masks_path = os.path.join(new_datasets_path, 'test/masks')
 
+    if validation:
+        validation_textures_path = os.path.join(old_datasets_path, 'validation/textures')
+        validation_masks_path = os.path.join(old_datasets_path, 'validation/masks')
+        new_validation_textures_path = os.path.join(new_datasets_path, 'validation/textures')
+        new_validation_masks_path = os.path.join(new_datasets_path, 'validation/masks')
+    
     try:
-        create_pyramid_images(train_textures_path, new_train_textures_path + '/data', True)
-        create_pyramid_images(train_masks_path, new_train_masks_path + '/data')
-        create_pyramid_images(test_textures_path, new_test_textures_path + '/data', True)
-        create_pyramid_images(test_masks_path, new_test_masks_path + '/data')
+        create_pyramid_images(train_textures_path, os.path.join(new_train_textures_path, 'data'), True)
+        create_pyramid_images(train_masks_path, os.path.join(new_train_masks_path, 'data'))
+        create_pyramid_images(test_textures_path, os.path.join(new_test_textures_path, 'data'), True)
+        create_pyramid_images(test_masks_path, os.path.join(new_test_masks_path, 'data'))
+        if validation:
+            create_pyramid_images(validation_textures_path, os.path.join(new_validation_textures_path, 'data'), True)
+            create_pyramid_images(validation_masks_path, os.path.join(new_validation_masks_path, 'data'))
     except Exception as e:
         print(e)
         raise e
