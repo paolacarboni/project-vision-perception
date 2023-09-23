@@ -23,7 +23,7 @@ def save(gan: GAN, save_folder, training_collector, test_collector, validation_c
         return 1
 
 
-def train(gan: GAN, dataloaders = [], epoch=1, batch_size=32, validator: EarlyStopper=None):
+def train(gan: GAN, dataloaders = [], epoch=1, batch_size=32, validator: EarlyStopper=None, saving=0, save_folder=""):
 
     validation = validator != None
     if len(dataloaders) < 2 + int(validation):
@@ -59,6 +59,8 @@ def train(gan: GAN, dataloaders = [], epoch=1, batch_size=32, validator: EarlySt
             validation_collector.append_imgs(imgs_gen, imgs_real, imgs_mask)
             if validator.early_stop(lossG_val):             
                 break
+        if saving > 0 and (e % saving == 0):
+            save(gan, save_folder, training_collector, test_collector, validation_collector)
     
     return training_collector, test_collector, validation_collector
 
@@ -95,7 +97,7 @@ def load(gan: GAN, par_file):
 
     return 0
 
-def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_size=32, validation=False):
+def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_size=32, validation=False, saving=0):
 
     if (res == 32):
         gan = GAN32(device)
@@ -110,7 +112,7 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
 
     validator = None
     if validation:
-        validator: EarlyStopper = EarlyStopper(patience=3, min_delta=0.01)
+        validator: EarlyStopper = EarlyStopper(patience=3, min_delta=0.0005)
 
     if load(gan, par_file):
         return 1
@@ -123,6 +125,6 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
 
     train_collector, test_collector, validation_collector = train(gan, dataloaders, epoch, batch_size, validator=validator)
     
-    save(gan, save_folder, train_collector, test_collector, validation_collector)
+    save(gan, save_folder, train_collector, test_collector, validation_collector, saving=saving, save_folder=save_folder)
     
     return 0
