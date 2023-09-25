@@ -85,4 +85,4 @@ class GAN64(GAN):
         total_lossD /= len(dataloader_texture)
         total_lossG /= len(dataloader_texture)
 
-        return total_lossD, total_lossG, x_gen.detach().clone(), x_real_64.detach().clone(), x_corr.detach().clone()
+        return total_lossD, total_lossG, x_gen.detach().clone(), x_real_64.detach().clone(), x_corr[:, :, 32:96, 0:64].detach().clone()
