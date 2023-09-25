@@ -87,7 +87,7 @@ class GAN():
     def save(self, d_filename, g_filename):
         try:
             save_nn(self.D, d_filename)
-            if len(self.G):
+            if self.G is not None:
                 save_nn(self.G, g_filename)
             return 0
         except Exception as e:

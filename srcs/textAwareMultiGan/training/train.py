@@ -123,8 +123,8 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
         print(str(e))
         return 1
 
-    train_collector, test_collector, validation_collector = train(gan, dataloaders, epoch, batch_size, validator=validator)
+    train_collector, test_collector, validation_collector = train(gan, dataloaders, epoch, batch_size, validator=validator, saving=saving, save_folder=save_folder)
     
-    save(gan, save_folder, train_collector, test_collector, validation_collector, saving=saving, save_folder=save_folder)
+    save(gan, save_folder, train_collector, test_collector, validation_collector)
     
     return 0
