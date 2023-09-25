@@ -39,14 +39,15 @@ def load_parameters(pars: [trainParameters], par_file):
         for line in file:
             words = line.split()
             if len(words) > 0:
-                if words[0] == "32":
-                    par = pars[0]
-                elif words[0] == "64":
-                    par = pars[1]
-                elif words[0] == "128":
-                    par = pars[2]
-                elif words[0] == "256":
-                    par = pars[3]
+                if words[0].casefold() == "res" and len(words) > 1:
+                    if words[1] == "32":
+                        par = pars[0]
+                    elif words[1] == "64":
+                        par = pars[1]
+                    elif words[1] == "128":
+                        par = pars[2]
+                    elif words[1] == "256":
+                        par = pars[3]
                 else:
                     if parse_line(words, par):
                         return 1

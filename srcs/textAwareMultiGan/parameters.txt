@@ -1,4 +1,4 @@
-32
+res 32
 
 d_lr 0.0001
 g_lr 0.0005
@@ -7,7 +7,7 @@ g_betas (0.5,0.99)
 d_filename
 g_filename
 
-64
+res 64
 
 d_lr 0.0001
 g_lr 0.0005
@@ -16,7 +16,7 @@ g_betas (0.5,0.99)
 d_filename
 g_filename
 
-128
+res 128
 
 d_lr 0.0
 g_lr 0.0
@@ -25,7 +25,7 @@ g_betas 0.0
 d_filename
 g_filename
 
-256
+res 256
 
 d_lr 0.0
 g_lr 0.0

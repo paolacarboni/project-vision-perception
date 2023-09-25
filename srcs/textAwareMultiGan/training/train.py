@@ -102,7 +102,7 @@ def load(gan: GAN, par_file):
 
     return 0
 
-def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_size=32, validation=False, saving=0):
+def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_size=32, validation=False, patience=3, min_delta=0.0005, saving=0):
 
     if (res == 32):
         gan = GAN32(device)
@@ -117,7 +117,7 @@ def train_gan(res, datasets_path, save_folder, par_file, device, epoch=1, batch_
 
     validator = None
     if validation:
-        validator: EarlyStopper = EarlyStopper(patience=3, min_delta=0.0005)
+        validator: EarlyStopper = EarlyStopper(patience=patience, min_delta=min_delta)
 
     if load(gan, par_file):
         return 1
