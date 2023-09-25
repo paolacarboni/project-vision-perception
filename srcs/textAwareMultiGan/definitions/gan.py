@@ -36,6 +36,7 @@ class GAN():
     def load_D_weights(self, filename):
         try:
             load_weights(self.D, filename, self.device)
+            print("Discriminator Weights loaded")
             return 0
         except Exception as e:
             print(str(e))
@@ -47,6 +48,7 @@ class GAN():
             return 1
         try:
             load_weights(self.generators[i], filename, self.device)
+            print("Generetors Weights loaded")
         except Exception as e:
             print(str(e))
             return 0
