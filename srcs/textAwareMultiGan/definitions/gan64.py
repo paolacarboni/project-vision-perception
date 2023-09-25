@@ -6,8 +6,8 @@ from ..definitions.generator64 import Generator64
 class GAN64(GAN):
     def __init__(self, device):
         super().__init__(device)
-        self.generators.append(Generator32())
-        self.generators.append(Generator64())
+        self.generators.append(Generator32().to(device))
+        self.generators.append(Generator64().to(device))
         self.G = self.generators[1]
         self.res = 64
     
@@ -30,7 +30,7 @@ class GAN64(GAN):
             x_mask = x_mask.to(self.device)
             x_real, _ = next(iter(dataloader_texture))
             x_real = x_real.to(self.device)
-            x_real_64 = x_real[:, :, 32:96, 0:64]
+            x_real_64 = x_real[:, :, 32:96, 0:64].to(self.device)
 
             D_real = D_64(x_real_64)
 

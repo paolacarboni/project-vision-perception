@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 from ..definitions.patchGanDiscriminator import PatchGANDiscriminator
 
-def load_weights(NN, filename):
+def load_weights(NN, filename, device):
     try:
-        d_file = open(filename, 'r')
+        d_file = torch.load(filename, map_location=torch.device(device))
         NN.load_state_dict(d_file)
         return 0
     except FileNotFoundError:
@@ -35,7 +35,7 @@ class GAN():
 
     def load_D_weights(self, filename):
         try:
-            load_weights(self.D, filename)
+            load_weights(self.D, filename, self.device)
             return 0
         except Exception as e:
             print(str(e))
@@ -46,7 +46,7 @@ class GAN():
             print("Error: generator not defined")
             return 1
         try:
-            load_weights(self.generators[i], filename)
+            load_weights(self.generators[i], filename, self.device)
         except Exception as e:
             print(str(e))
             return 0
@@ -55,10 +55,10 @@ class GAN():
         if len(g_filenames) > len(self.generators):
             raise Exception("Error: wrong number of files")
         try:
-            load_weights(self.D, d_filename)
+            load_weights(self.D, d_filename, self.device)
             i = 0
             for f in g_filenames:
-                load_weights(self.generators[i], f)
+                load_weights(self.generators[i], f, self.device)
                 i += 1
             print("Weights loaded")
             return 0
