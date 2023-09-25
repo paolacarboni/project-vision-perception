@@ -89,8 +89,13 @@ def load(gan: GAN, par_file):
         to_load.append(parameters[i].g_filename)
         i += 1
 
+    i = 0
+    for filename in to_load:
+        gan.load_G_weights(filename, i)
+        i += 1
+
     if par.d_filename:
-        gan.load(par.d_filename, to_load)
+        gan.load_D_weights(par.d_filename)
 
     gan.set_D_optimizer(torch.optim.Adam(gan.get_D().parameters(), lr=par.d_lr, betas=par.d_betas))
     gan.set_G_optimizer(torch.optim.Adam(gan.get_G().parameters(), lr=par.g_lr, betas=par.g_betas))
