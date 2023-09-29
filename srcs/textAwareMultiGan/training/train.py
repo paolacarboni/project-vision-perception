@@ -17,7 +17,7 @@ def save(gan: GAN, save_folder, training_collector, test_collector, validation_c
         save_data(training_collector, os.path.join(save_folder, "train"))
         save_data(test_collector,  os.path.join(save_folder, "test"))
         if validation_collector != None:
-            save_data(test_collector,  os.path.join(save_folder, "validation"))
+            save_data(validation_collector,  os.path.join(save_folder, "validation"))
         gan.save(os.path.join(save_folder, ("discriminator_" + str(gan.res) + ".pth")), os.path.join(save_folder, ("generator_" + str(gan.res) + ".pth")))
     except Exception as e:
         return 1
