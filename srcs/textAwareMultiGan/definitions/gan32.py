@@ -30,8 +30,8 @@ class GAN32(GAN):
             x_real = x_real[:, :, 0:32, 0:32].to(self.device)
             D_real = D_32(x_real)
 
-            lab_real = torch.full((batch_size, 1, 3, 3), 0.9).to(self.device)
-            lab_fake = torch.full((batch_size, 1, 3, 3), 0.1).to(self.device)
+            lab_real = torch.full((batch_size, 1, 3, 3), 0.99).to(self.device)
+            lab_fake = torch.full((batch_size, 1, 3, 3), 0.01).to(self.device)
             
             if train:
                 optimizerD.zero_grad()
@@ -48,11 +48,13 @@ class GAN32(GAN):
             x_gen = G_32(z)
             D_fake = D_32(x_gen)
 
+            #print("D_fake, D_real: ", torch.sigmoid(D_real), torch.sigmoid(D_fake))
             lossD_real = adversarial_loss(torch.sigmoid(D_real), lab_real).to(self.device)
             lossD_fake = adversarial_loss(torch.sigmoid(D_fake), lab_fake).to(self.device)
 
-            lossD = lossD_real + lossD_fake
-
+            lossD = 0.5 * lossD_real + 0.5 * lossD_fake
+            #print("LossD real: ", lossD_real.item())
+            #print("Loss fake: ", lossD_fake.item())
             if train:
                 lossD.mean().backward()
                 optimizerD.step()
@@ -64,6 +66,7 @@ class GAN32(GAN):
             lossG_adv = adversarial_loss(torch.sigmoid(D_fake),  lab_real)
             pixelwise_loss_value = pixelwise_loss(x_gen, x_real)
 
+            #print("LossG_adv: ", lossG_adv.item())
             lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
             if train:

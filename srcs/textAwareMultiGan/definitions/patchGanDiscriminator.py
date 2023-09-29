@@ -18,7 +18,7 @@ class PatchGANDiscriminator(nn.Module):
 
         for m in self.layers.modules():
             if isinstance(m, nn.Conv2d):
-                torch.nn.init.normal_(m.weight.data, mean=0.0, std=0.02)
+                torch.nn.init.normal_(m.weight.data, mean=0.0, std=0.05)
 
 
     def forward(self, x):
