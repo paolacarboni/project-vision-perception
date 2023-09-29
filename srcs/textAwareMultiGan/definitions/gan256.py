@@ -1,18 +1,20 @@
 import torch
 from torchvision import transforms
+import torch.nn.functional as F
 from ..definitions.gan import GAN
 from ..definitions.generator32 import Generator32
 from ..definitions.generator64 import Generator64
 from ..definitions.generator128 import Generator128
+from ..definitions.generator256 import Generator256
 from ..definitions.textureLoss import TextureLoss
 
 class GAN256(GAN):
     def __init__(self, device):
         super().__init__(device)
-        self.generators.append()
-        self.generators.append()
-        self.generators.append()
-        self.generators.append()
+        self.generators.append(Generator32())
+        self.generators.append(Generator64())
+        self.generators.append(Generator128())
+        self.generators.append(Generator256())
         self.G = self.generators[3]
         self.res = 256
         self.texture_loss = TextureLoss()
@@ -111,3 +113,29 @@ class GAN256(GAN):
         total_lossG /= len(dataloader_texture)
 
         return total_lossD, total_lossG, x_gen.detach().clone(), x_real_256.detach().clone(), x_corr.detach().clone()
+
+    def forward(self, image, mask):
+
+        i_32 = F.interpolate(image, size=(32, 32), mode='bilinear', align_corners=False)
+        i_64 = F.interpolate(image, size=(64, 64), mode='bilinear', align_corners=False)
+        i_128 = F.interpolate(image, size=(128, 128), mode='bilinear', align_corners=False)
+        i_256 = F.interpolate(image, size=(256, 256), mode='bilinear', align_corners=False)
+
+        m_32 = F.interpolate(mask, size=(32, 32), mode='bilinear', align_corners=False)
+        m_64 = F.interpolate(mask, size=(64, 64), mode='bilinear', align_corners=False)
+        m_128 = F.interpolate(mask, size=(128, 128), mode='bilinear', align_corners=False)
+        m_256 = F.interpolate(mask, size=(256, 256), mode='bilinear', align_corners=False)
+
+        print(i_32.shape, m_32.shape)
+        print((i_32 * (1 - m_32)).shape)
+        x_32 = torch.cat((i_32 * (1 - m_32), m_32), dim=1)
+        x_64 = torch.cat((i_64 * (1 - m_64), m_64), dim=1)
+        x_128 = torch.cat((i_128 * (1 - m_128), m_128), dim=1)
+        x_256 = torch.cat((i_256 * (1 - m_256), m_256), dim=1)
+
+        x_gen_32 = self.generators[0](x_32)
+        x_gen_64 = self.generators[1](x_64, x_gen_32)
+        x_gen_128 = self.generators[2](x_128, x_gen_64, x_gen_32)
+        x_gen = self.G(x_256, x_gen_128, x_gen_64, x_gen_32)
+
+        return x_gen

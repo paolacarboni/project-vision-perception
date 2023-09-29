@@ -7,6 +7,7 @@ import os
 import torch
 import shutil
 from torchvision import transforms
+from torchvision import utils as vutils
 from textAwareMultiGan.definitions.gan256 import GAN256
 from textAwareMultiGan.training.saver import save_imgs
 
@@ -86,15 +87,17 @@ def exec(option, canvas):
             tensor_mask_batched = tensor_mask.unsqueeze(0)
             result = gan.forward(tensor_image_batched, tensor_mask_batched)
             save_imgs(result, "img")
-            print(result[0])
-            valore_massimo = result[0].max()
-            valore_minimo = result[0].min()
 
-            # Normalizza il tensore nell'intervallo [0, 1]
-            tensor_normalizzato = (result[0] - valore_minimo) / (valore_massimo - valore_minimo)
+            res = vutils.make_grid(result.detach(), normalize=True)
+            ndarr = ndarr = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+            im = Image.fromarray(ndarr)
+
+            normalized = ((result[0] / 255.0 - 0.5) / 0.5)
+
             #blended_image = tensor_image * tensor_mask + result[0] * (1 - tensor_mask)
-            img = Image.fromarray(255 * result[0].permute(1, 2, 0).detach().numpy().astype('uint8'))
-            image_tk = ImageTk.PhotoImage(img)
+            #img = Image.fromarray(255 * normalized.permute(1, 2, 0).detach().numpy().astype('uint8'))
+            img = transforms.ToPILImage()(normalized.byte())
+            image_tk = ImageTk.PhotoImage(im)
             canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
             canvas.image = image_tk
 
