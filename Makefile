@@ -3,6 +3,9 @@ PIP = pip3
 
 all: install run
 
+init:
+	$(PYTHON) init.py
+
 install:
 	$(PIP) install	-r	requirements.txt
 	$(PIP) install --upgrade -r requirements.txt
