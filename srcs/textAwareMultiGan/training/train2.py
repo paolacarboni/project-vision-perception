@@ -14,7 +14,6 @@ from ..definitions.trainer import GanTrainer
 def do_dataloader(batch_size, path):
 
     images_path_train = os.path.join(path, 'train')
-    images_path_test = os.path.join(path, 'test')
     
     dataset = GanDataset(images_path_train)
 
@@ -28,16 +27,13 @@ def do_dataloader(batch_size, path):
     train_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     validation_loader = DataLoader(dataset=validation_dataset, batch_size=batch_size, shuffle=True)
 
-    test_dataset = GanDataset(images_path_test)
-    test_loader = DataLoader(dataset=test_dataset, batch_size=batch_size, shuffle=True)
-
-    return train_loader, validation_loader, test_loader
+    return train_loader, validation_loader
 
 def train_gan(dataset_path, save_path, batch_size, resolution, epochs, lr_g=0.001, lr_d=0.001, betas_d=(0.5,0.99), betas_g=(0.5,0.99), patience=3, min_delta=0.02):
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-    train_dataloader, val_dataloader, test_dataloader = do_dataloader(batch_size, dataset_path)
+    train_dataloader, val_dataloader = do_dataloader(batch_size, dataset_path)
 
     gan: TextAwareMultiGan = TextAwareMultiGan(resolution)
     gan.to(device)
@@ -57,4 +53,3 @@ def train_gan(dataset_path, save_path, batch_size, resolution, epochs, lr_g=0.00
 
     np.savez(os.path.join(save_path, lossname), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
     gan.save(os.path.join(save_path, d_name), os.path.join(save_path, g_name))
-

@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import datetime
 import torch.nn.functional as F
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 class GanTrainer():
     def __init__(self, model, optimizer_d, optimizer_g, chk_name, patience=1, min_delta=0):
@@ -135,7 +135,7 @@ class GanTrainer():
             epoch_d_loss = 0
             epoch_g_loss = 0
 
-            batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = False)
+            batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
                 input_b = batch['inputs'].to(self.device)
                 real_b = batch['reals'].to(self.device)
@@ -147,7 +147,7 @@ class GanTrainer():
                 epoch_d_loss += lossD.tolist()
                 epoch_g_loss += lossG.tolist() 
 
-                batch_pbar.set_postfix({'v': valid_loss, 'd': lossD.item(), 'g': lossG.item(), 'p': self.counter})
+                batch_pbar.set_postfix({'v': self.min_validation_loss, 'd': lossD.item(), 'g': lossG.item(), 'p': self.counter})
 
                 avg_epoch_loss = epoch_d_loss / len(train_dataset)
                 train_d_losses.append(avg_epoch_loss)
@@ -164,7 +164,6 @@ class GanTrainer():
                 if self._early_stop(valid_loss):
                     #self.save_model('GAN')
                     break
-            batch_pbar.update(1)
 
         return train_d_losses, train_g_losses, valid_losses
 
