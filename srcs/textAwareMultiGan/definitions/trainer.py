@@ -42,7 +42,7 @@ class GanTrainer():
                 return True
         return False
 
-    def _exec(self, input_b, real_b, enable_discriminator, enale_generator):
+    def _exec(self, input_b, real_b, enable_discriminator, enable_generator):
         D = self.model.D
         batch_size = len(input_b)
 
@@ -50,10 +50,10 @@ class GanTrainer():
         real_b = real_b[..., (r-32):((2*r)-32), 0:r]
 
         size = int((self.model.get_resolution() / 8 - 1))
-        lab_real = torch.full((batch_size, 1, size, size), 0.99)
-        lab_fake = torch.full((batch_size, 1, size, size), 0.01)
+        lab_real = torch.full((batch_size, 1, size, size), 0.9)
+        lab_fake = torch.full((batch_size, 1, size, size), 0.1)
 
-        if (enale_generator):
+        if (enable_generator):
             with torch.enable_grad():
                 prediction = self.model(input_b)
         else:
@@ -162,8 +162,9 @@ class GanTrainer():
                 # print('val_loss', valid_loss)
                 valid_losses.append(valid_loss)
                 if self._early_stop(valid_loss):
-                    self.save_model('GAN')
+                    #self.save_model('GAN')
                     break
+            batch_pbar.update(1)
 
         return train_d_losses, train_g_losses, valid_losses
 

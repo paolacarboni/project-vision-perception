@@ -149,6 +149,11 @@ def create_datasets(old_datasets_path, new_datasets_path, validation=False):
     new_test_textures_path = os.path.join(new_datasets_path, 'test\\textures')
     new_test_masks_path = os.path.join(new_datasets_path, 'test\\masks')
 
+    os.makedirs(os.path.join(new_datasets_path,'train', 'inputs'))
+    os.makedirs(os.path.join(new_datasets_path,'train', 'reals'))
+    os.makedirs(os.path.join(new_datasets_path,'test', 'inputs'))
+    os.makedirs(os.path.join(new_datasets_path,'test', 'reals'))
+
     if validation:
         validation_textures_path = os.path.join(old_datasets_path, 'validation\\textures')
         validation_masks_path = os.path.join(old_datasets_path, 'validation\\masks')
