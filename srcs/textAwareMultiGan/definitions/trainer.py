@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import datetime
 import torch.nn.functional as F
-from PIL import Image
 from tqdm import tqdm
 
 class GanTrainer():
@@ -43,30 +42,41 @@ class GanTrainer():
                 return True
         return False
 
-    def _compute_generator(self, input_b, real_b):
+    def _exec(self, input_b, real_b, enable_discriminator, enale_generator):
         D = self.model.D
         batch_size = len(input_b)
+
         r = self.model.get_resolution()
         real_b = real_b[..., (r-32):((2*r)-32), 0:r]
 
-        size = int(self.model.get_resolution() / 8 - 1)
+        size = int((self.model.get_resolution() / 8 - 1))
         lab_real = torch.full((batch_size, 1, size, size), 0.99)
         lab_fake = torch.full((batch_size, 1, size, size), 0.01)
-        
-        prediction = self.model(input_b)
 
-        D_fake = D(prediction)
+        if (enale_generator):
+            with torch.enable_grad():
+                prediction = self.model(input_b)
+        else:
+            with torch.no_grad():
+                prediction = self.model(input_b)
 
-        lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
-        pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-        lossG = 0.1 * lossG_adv + pixelwise_loss_value
-
-        D_real = D(real_b)
+        if (enable_discriminator):
+            with torch.enable_grad():
+                D_real = D(real_b)
+                D_fake = D(prediction)
+        else:
+            with torch.no_grad():
+                D_real = D(real_b)
+                D_fake = D(prediction)
 
         lossD_real = self.adversarial_loss(torch.sigmoid(D_real), lab_real)
         lossD_fake = self.adversarial_loss(torch.sigmoid(D_fake), lab_fake)
 
         lossD = lossD_real + lossD_fake
+
+        lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
+        pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+        lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
         return lossD, lossG
 
@@ -80,50 +90,33 @@ class GanTrainer():
                 input_b = batch['inputs']
                 real_b = batch['reals']
                 
-                lossD, lossG = self._compute_generator(input_b, real_b) 
+                lossD, lossG = self._exec(input_b, real_b, False, False) 
 
                 valid_loss += lossG.tolist()
                 batch_pbar.set_postfix({'validation_loss': lossG.tolist(), 'patience': self.counter})
         avg_valid_loss = valid_loss / len(validation_dataset)
         return avg_valid_loss
     
-    def _train_d(self, input_b, real_b):
-        D = self.model.D
-        batch_size = len(input_b)
+    def _train(self, input_b, real_b, epoch, offset, mode):
 
-        r = self.model.get_resolution()
-        real_b = real_b[..., (r-32):((2*r)-32), 0:r]
+        enable_d = epoch < offset or (epoch % 2 != offset % 2) or mode == 'union'
+        if enable_d:
+            self.model.train_discriminator()
+            self.d_optimizer.zero_grad()
 
-        size = int((self.model.get_resolution() / 8 - 1))
-        lab_real = torch.full((batch_size, 1, size, size), 0.99)
-        lab_fake = torch.full((batch_size, 1, size, size), 0.01)
+        enable_g = epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union')
+        if enable_g:
+            self.model.train_generator()
+            self.g_optimizer.zero_grad()
 
-        prediction = self.model(input_b)
+        lossD, lossG = self._exec(input_b, real_b, enable_d, enable_g)
 
-        D_real = D(real_b)
-        D_fake = D(prediction)
-
-        lossD_real = self.adversarial_loss(torch.sigmoid(D_real), lab_real)
-        lossD_fake = self.adversarial_loss(torch.sigmoid(D_fake), lab_fake)
-
-        lossD = lossD_real + lossD_fake
-
-        lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
-        pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-        lossG = 0.1 * lossG_adv + pixelwise_loss_value
-
-        return lossD, lossG
-    
-    def _train_g(self, input_b, real_b, ):
-        self.model.train_generator()
-        self.model.eval_discriminator()
-        self.g_optimizer.zero_grad()
-
-        lossD, lossG = self._compute_generator(input_b, real_b)
-        
-        lossG.backward()
-        self.g_optimizer.step()
-
+        if enable_d:
+            lossD.backward()
+            self.d_optimizer.step()
+        if enable_g:
+            lossG.backward()
+            self.g_optimizer.step()
         return lossD, lossG
 
     def train(self, batch_size, train_dataset, validation_dataset, offset = 1, mode ="swap", epochs=100):
@@ -149,40 +142,20 @@ class GanTrainer():
                 self.model.eval_generator()
                 self.model.eval_discriminator()
 
-                if epoch < offset or (epoch % 2 != offset % 2) or mode == 'union':
-                    self.model.train_discriminator()
-                    self.d_optimizer.zero_grad()
-                    #lossD, lossG = self._train_d(input_b, real_b)
-                    #epoch_d_loss += lossD.tolist()
-                if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
-                    self.model.train_generator()
-                    self.g_optimizer.zero_grad()
-                    #lossD, lossG = self._train_g(input_b, real_b)
-                    #epoch_g_loss += lossG.tolist()
-                
-                lossD, lossG = self._train_d(input_b, real_b)
+                lossD, lossG = self._train(input_b, real_b, epoch, offset, mode)
 
-                if epoch < offset or (epoch % 2 != offset % 2) or mode == 'union':
-                    lossD.backward()
-                    self.d_optimizer.step()
-                    epoch_d_loss += lossD.tolist()
-                if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
-                    lossG.backward()
-                    self.g_optimizer.step()
-                    epoch_g_loss += lossG.tolist()        
-
+                epoch_d_loss += lossD.tolist()
+                epoch_g_loss += lossG.tolist() 
 
                 batch_pbar.set_postfix({'v': valid_loss, 'd': lossD.item(), 'g': lossG.item(), 'p': self.counter})
 
-
-            if epoch < offset or (epoch % 2 != offset % 2) or mode == 'union':
                 avg_epoch_loss = epoch_d_loss / len(train_dataset)
                 train_d_losses.append(avg_epoch_loss)
 
-            if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
-                # training epoch loss
                 avg_epoch_loss = epoch_g_loss / len(train_dataset)
                 train_g_losses.append(avg_epoch_loss)
+
+            if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 

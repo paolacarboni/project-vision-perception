@@ -1,75 +1,28 @@
 import os
-import numpy as np
-import torch
-from tqdm import tqdm
 from PIL import Image
 from torch.utils.data import Dataset
-from torchvision import transforms, datasets
-from ..definitions.utils import create_pyramid_image
+from torchvision import transforms
 
 class GanDataset(Dataset):
-    def __init__(self, mode, img_path, real_path, file_selection=None):
-        self.mode = mode
-        #self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.list_data = []
-        self._load_data(img_path, real_path)
-        #self.import_dataset()
-    
-    def set_device(self, device):
-        self.device = device
+    def __init__(self, root_dir):
+        self.root_dir = root_dir
+        self.input_dir = os.path.join(root_dir, 'inputs')
+        self.real_dir = os.path.join(root_dir, 'reals')
+        self.input_images = [f for f in os.listdir(self.input_dir) if f.endswith(('.jpg', '.png', '.jpeg'))]
+        self.real_images = [f for f in os.listdir(self.real_dir) if f.endswith(('.jpg', '.png', '.jpeg'))]
+        self.transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
 
-    def _load_data(self, img_path, real_path):
-        img_folder = os.listdir(img_path)
-        real_folder = os.listdir(real_path)
+    def __len__(self):
+        return len(self.input_images)
 
-        for input, real in tqdm(zip(img_folder, real_folder)):
-            tensor_i = torch.load(os.path.join(img_folder, input))
-            tensor_r = torch.load(os.path.join(real_folder, real))
-            entry = {
-                    'input': tensor_i,
-                    'real': tensor_r
-                }
-            self.list_data.append(entry)       
-
-    def _create_pyramid_images(self, img_path, mask_path, file_selection=None, shuffle=True):
-
-        toTransform = [
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ]
-        transform = transforms.Compose(toTransform)
-
-        dataset = datasets.ImageFolder(root=img_path, transform=transform)
+    def __getitem__(self, idx):
+        input_image_path = os.path.join(self.input_dir, self.input_images[idx])
+        real_image_path = os.path.join(self.real_dir, self.real_images[idx])
         
-        toTransform.append(transforms.Grayscale(num_output_channels=1))
-        masks = datasets.ImageFolder(root=mask_path, transform=transform)
-
-        return dataset, masks
-
-
-    def import_dataset(self):
-        '''
-        output:
-        data = dictionary of images and masks loaded in DEVICE
-        '''
-        data = []
-        m = 0
-
-        for image, _ in tqdm(self.dataset):
-
-            mask = self.masks[m][0]
-
-            input = image * (1 - mask)
-
-            final_input = torch.cat((input, mask), dim=0)
-
-            entry = {
-                'input': final_input,
-                'real': image
-            }
-            self.list_data.append(entry)
-
-            m += 1
-            if m >= len(self.masks):
-                m = 0
-        return data
+        input_image = Image.open(input_image_path).convert('RGBA')
+        real_image = Image.open(real_image_path).convert('RGB')
+        
+        input_image = self.transform(input_image)
+        real_image = self.transform(real_image)
+        
+        return {'inputs': input_image, 'reals': real_image}
