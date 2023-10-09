@@ -40,6 +40,6 @@ class Generator32(nn.Module):
       for m in self.modules():
         if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
           # Inizializza i pesi con una distribuzione Gaussiana
-          init.normal_(m.weight.data, mean=0.0, std=0.1)
+          init.normal_(m.weight.data, mean=0.0, std=0.02)
           if m.bias is not None:
             m.bias.data.zero_()

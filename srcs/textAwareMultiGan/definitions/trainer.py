@@ -45,13 +45,14 @@ class GanTrainer():
     def _exec(self, input_b, real_b, enable_discriminator, enable_generator):
         D = self.model.D
         batch_size = len(input_b)
-
+        input_b = input_b.to(self.device)
+        real_b = real_b.to(self.device)
         r = self.model.get_resolution()
         real_b = real_b[..., (r-32):((2*r)-32), 0:r]
 
         size = int((self.model.get_resolution() / 8 - 1))
-        lab_real = torch.full((batch_size, 1, size, size), 0.9)
-        lab_fake = torch.full((batch_size, 1, size, size), 0.1)
+        lab_real = torch.full((batch_size, 1, size, size), 0.9).to(self.device)
+        lab_fake = torch.full((batch_size, 1, size, size), 0.1).to(self.device)
 
         if (enable_generator):
             with torch.enable_grad():
@@ -137,8 +138,8 @@ class GanTrainer():
 
             batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
-                input_b = batch['inputs'].to(self.device)
-                real_b = batch['reals'].to(self.device)
+                input_b = batch['inputs']
+                real_b = batch['reals']
                 self.model.eval_generator()
                 self.model.eval_discriminator()
 
@@ -149,18 +150,20 @@ class GanTrainer():
 
                 batch_pbar.set_postfix({'v': self.min_validation_loss, 'd': lossD.item(), 'g': lossG.item(), 'p': self.counter})
 
-                avg_epoch_loss = epoch_d_loss / len(train_dataset)
-                train_d_losses.append(avg_epoch_loss)
+                avg_epoch_d_loss = epoch_d_loss / len(train_dataset)
+                train_d_losses.append(avg_epoch_d_loss)
 
-                avg_epoch_loss = epoch_g_loss / len(train_dataset)
-                train_g_losses.append(avg_epoch_loss)
+                avg_epoch_g_loss = epoch_g_loss / len(train_dataset)
+                train_g_losses.append(avg_epoch_g_loss)
 
+            print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
             if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 
                 # print('val_loss', valid_loss)
                 valid_losses.append(valid_loss)
+                print('V(x):{}'.format(valid_loss))
                 if self._early_stop(valid_loss):
                     #self.save_model('GAN')
                     break

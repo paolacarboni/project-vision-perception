@@ -84,14 +84,14 @@ class Generator256(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
                 if m in self.block1.modules():
-                    init.normal_(m.weight.data, mean=0.0, std=0.05)  # Inizializza i pesi per il blocco 1
+                    init.normal_(m.weight.data, mean=0.0, std=0.02)  # Inizializza i pesi per il blocco 1
                 elif m in self.block2.modules():
-                    init.normal_(m.weight.data, mean=0.0, std=0.05)  # Inizializza i pesi per il blocco 2
+                    init.normal_(m.weight.data, mean=0.0, std=0.02)  # Inizializza i pesi per il blocco 2
                 elif m in self.block3.modules():
-                    init.normal_(m.weight.data, mean=0.0, std=0.05)  # Inizializza i pesi per il blocco 3
+                    init.normal_(m.weight.data, mean=0.0, std=0.02)  # Inizializza i pesi per il blocco 3
                 elif m in self.block4.modules():
-                    init.normal_(m.weight.data, mean=0.0, std=0.05)  # Inizializza i pesi per il blocco 4
+                    init.normal_(m.weight.data, mean=0.0, std=0.02)  # Inizializza i pesi per il blocco 4
                 elif m in self.block5.modules():
-                    init.normal_(m.weight.data, mean=0.0, std=0.05)  # Inizializza i pesi per il blocco 4
+                    init.normal_(m.weight.data, mean=0.0, std=0.02)  # Inizializza i pesi per il blocco 4
                 if m.bias is not None:
                     m.bias.data.zero_()
