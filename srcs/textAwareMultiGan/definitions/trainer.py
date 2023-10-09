@@ -157,7 +157,7 @@ class GanTrainer():
                 train_g_losses.append(avg_epoch_g_loss)
 
             print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
-            if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
+            if epoch >= offset + 2 and ((epoch % 2 == offset % 2) or mode == 'union'):
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 

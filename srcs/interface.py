@@ -2,20 +2,26 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from typing import Any
-from PIL import Image, ImageTk
+from PIL import Image, ImageFilter, ImageTk
 import os
 import torch
 import shutil
+import numpy as np
 from torchvision import transforms
 from torchvision import utils as vutils
+from textAwareMultiGan.definitions.gan32 import GAN32
+from textAwareMultiGan.definitions.gan64 import GAN64
+from textAwareMultiGan.definitions.gan128 import GAN128
 from textAwareMultiGan.definitions.gan256 import GAN256
 from textAwareMultiGan.training.saver import save_imgs
+from textDetection.definitions.uNetTextDetection import UNetTextDetection, load_pretrained_model
 
 canvas_size = (256, 256)
 
 def init():
     pwd = os.getcwd()
     folder = os.path.join(pwd, "resrcs/neuralNetworks/textAwareMultiGan")
+    #Controllo che esista la cartella contenente i pesi della gan. Se esiste carico i pesi
     if not os.path.exists(folder):
         os.makedirs(folder)
     else:
@@ -26,6 +32,18 @@ def init():
                 gan.load_G_weights(os.path.join(folder, list_files[i]), i)
             gan_setting.set(folder)
             messagebox.showinfo("Success", "GAN loaded")
+    #Controllo che esista la cartella contenente i pesi della text detection. Se esiste carico i pesi
+    folder = os.path.join(pwd, "resrcs/neuralNetworks/textDetection")
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    else:
+        list_files = ["text_detection.pth"]
+        ret, file = check_file_in_folder(list_files, folder)
+        if not ret:
+            unet.load_state_dict(torch.load(os.path.join(folder, "text_detection.pth"), map_location=torch.device('cpu')))
+            unet_setting.set(folder)
+            messagebox.showinfo("Success", "UNET loaded")
+                      
 
 def check_file_in_folder(files, folder):
     for file in files:
@@ -49,13 +67,56 @@ def open(flag, title):
             gan_setting.set(folder)
             messagebox.showinfo("Success", "GAN loaded")
     else:
-        text_detection_setting = filedialog.askdirectory(title=title)
+        #text_detection_setting = filedialog.askdirectory(title=title)
+        file_td = filedialog.askopenfilename(title=title, filetypes=[(".pth files", "*.pth")])
+        if text_detection_setting != "":
+            unet.load_state_dict(torch.load(file_td, map_location=torch.device('cpu')))
+            messagebox.showinfo("Success", "Text Detection loaded")
+        text_detection_setting.set(file_td)
 
 def exec(option, canvas):
     print("GAN SETTING:", gan_setting.get())
     folder = gan_setting.get()
     if option == 1:
-        pass
+        #TextDetection -case
+        folder = text_detection_setting.get()
+        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+        if folder == "":
+            messagebox.showerror("Error", f"Select a folder containing the model file from the button \"Setting TextDetection\"")
+        elif image.get() == "":
+            messagebox.showerror("Error", f"Load an image")
+        else:
+            i = Image.open(image.get())
+            if len(i.mode)!= 3:
+                messagebox.showerror("Error", "Wrong number of channels for image")
+                return 1
+            
+            transform = transforms.Compose([
+                transforms.Resize((256, 256)),
+                transforms.ToTensor()
+            ])
+
+
+            tensor_image = transform(i)
+            masked_image = np.array(transforms.Resize((256, 256))(i))
+            tensor_image = (tensor_image-torch.mean(tensor_image))/torch.std(tensor_image)
+            tensor_image_batched = tensor_image.unsqueeze(0)
+
+            result = unet(tensor_image_batched)
+            res = torch.squeeze(result.detach().to(device))
+            res= (res>0.2).float()
+            
+            #mask - da usare per gan - valori 0/255: 
+            arr_pred=(np.array(res)* 255).astype(np.uint8)
+            
+            for i in range(3):
+                masked_image[:, :, i] = (1 - np.array(res)) * np.array(masked_image[:, :, i])
+            im = Image.fromarray(masked_image)
+            im = im.resize(canvas_size, Image.Resampling.LANCZOS)
+
+            image_tk = ImageTk.PhotoImage(im)
+            canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+            canvas.image = image_tk
     elif option == 2:
         pass
     elif option == 3:
@@ -67,9 +128,12 @@ def exec(option, canvas):
             messagebox.showerror("Error", f"Load a mask")
         else:
             i = Image.open(image.get())
+            if len(i.mode)!= 3:
+                messagebox.showerror("Error", "Wrong number of channels for image")
+                return 1
             m = Image.open(mask.get())
             transform = transforms.Compose([
-                transforms.Resize((256, 256)),
+                #transforms.Resize((256, 256)),
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,)),
             ])
@@ -85,18 +149,14 @@ def exec(option, canvas):
             tensor_mask = transformM(m)
             tensor_image_batched = tensor_image.unsqueeze(0)
             tensor_mask_batched = tensor_mask.unsqueeze(0)
+
             result = gan.forward(tensor_image_batched, tensor_mask_batched)
-            save_imgs(result, "img")
 
             res = vutils.make_grid(result.detach(), normalize=True)
             ndarr = ndarr = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
             im = Image.fromarray(ndarr)
+            im = im.resize(canvas_size, Image.ANTIALIAS)
 
-            normalized = ((result[0] / 255.0 - 0.5) / 0.5)
-
-            #blended_image = tensor_image * tensor_mask + result[0] * (1 - tensor_mask)
-            #img = Image.fromarray(255 * normalized.permute(1, 2, 0).detach().numpy().astype('uint8'))
-            img = transforms.ToPILImage()(normalized.byte())
             image_tk = ImageTk.PhotoImage(im)
             canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
             canvas.image = image_tk
@@ -117,7 +177,7 @@ def carica_immagine(flag, canvas):
     filepath = filedialog.askopenfilename(filetypes=[("Immagini", "*.png;*.jpg;*.jpeg;*.bmp")])
     if filepath:
         img = Image.open(filepath)
-        img = img.resize(canvas_size, Image.ANTIALIAS)  # Ridimensiona l'immagine se necessario
+        img = img.resize(canvas_size, Image.ANTIALIAS)
         img = ImageTk.PhotoImage(img)
 
         # Mostra l'immagine
@@ -198,12 +258,16 @@ def window_ex():
     finestra = tk.Tk()
     finestra.title("Interfaccia per Operazioni di Immagini")
 
+    global unet
+    unet = UNetTextDetection()
+    global unet_setting
+    unet_setting = tk.StringVar()
     global gan_setting
     gan_setting = tk.StringVar()
     global text_detection_setting
     text_detection_setting = tk.StringVar()
     global gan
-    gan = GAN256(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+    gan = GAN32(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
     global image
     image = tk.StringVar()
     global mask
