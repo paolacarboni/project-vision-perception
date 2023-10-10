@@ -113,8 +113,11 @@ class GanTrainer():
 
                 prediction = self.model(input_b)
 
-                pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-                lossG = pixelwise_loss_value
+                #pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+                #lossG = pixelwise_loss_value
+
+                lossG = self.loss_fn_alex(real_b, prediction)
+                lossG = lossG.mean()
 
                 valid_loss += lossG
                 batch_pbar.set_postfix({'validation_loss': lossG.tolist(), 'patience': self.counter})
@@ -197,7 +200,10 @@ class GanTrainer():
                     os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
                     os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
                 )
-                #np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
+                try:
+                    np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
+                except Exception as e:
+                    print(e)
 
         return train_d_losses, train_g_losses, valid_losses
 
