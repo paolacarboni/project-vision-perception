@@ -113,11 +113,8 @@ class GanTrainer():
 
                 prediction = self.model(input_b)
 
-                #pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-                #lossG = pixelwise_loss_value
-
-                lossG = self.loss_fn_alex(real_b, prediction)
-                lossG = lossG.mean()
+                pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+                lossG = pixelwise_loss_value
 
                 valid_loss += lossG
                 batch_pbar.set_postfix({'validation_loss': lossG.tolist(), 'patience': self.counter})
@@ -185,12 +182,6 @@ class GanTrainer():
             print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
             if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
 
-                save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
-                self.model.save(
-                    os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
-                    os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
-                )
-                np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses)
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 
@@ -200,6 +191,13 @@ class GanTrainer():
                 if self._early_stop(valid_loss):
                     #self.save_model('GAN')
                     break
+                #saving
+                save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
+                self.model.save(
+                    os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
+                    os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
+                )
+                np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
 
         return train_d_losses, train_g_losses, valid_losses
 
