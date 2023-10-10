@@ -76,7 +76,8 @@ class Generator256(nn.Module):
         out3 = self.block3(x_64)
         x_32_u = torch.nn.functional.interpolate(x_32, size=(64, 64), mode='bilinear', align_corners=False)
         out4 = self.block4(x_32_u)
-        concatenated_features = torch.cat((out1, out2, out3, out4), dim=1)
+        dim = x_corr.dim() - 3
+        concatenated_features = torch.cat((out1, out2, out3, out4), dim=dim)
         out5 = self.block5(concatenated_features)
         return out5
 

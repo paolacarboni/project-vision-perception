@@ -89,8 +89,8 @@ class GanTrainer():
         lossD = lossD_real + lossD_fake
 
         lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
-        #pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-        pixelwise_loss_value = self.loss_fn_alex(prediction, real_b).mean()
+        pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+        #pixelwise_loss_value = self.loss_fn_alex(prediction, real_b).mean()
         lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
         return lossD, lossG, prediction
@@ -197,7 +197,7 @@ class GanTrainer():
                     os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
                     os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
                 )
-                np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
+                #np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
 
         return train_d_losses, train_g_losses, valid_losses
 
