@@ -9,10 +9,7 @@ import shutil
 import numpy as np
 from torchvision import transforms
 from torchvision import utils as vutils
-from textAwareMultiGan.definitions.gan32 import GAN32
-from textAwareMultiGan.definitions.gan64 import GAN64
-from textAwareMultiGan.definitions.gan128 import GAN128
-from textAwareMultiGan.definitions.gan256 import GAN256
+from textAwareMultiGan.definitions.gan_final import TextAwareMultiGan
 from textAwareMultiGan.training.saver import save_imgs
 from textDetection.definitions.uNetTextDetection import UNetTextDetection, load_pretrained_model
 
@@ -74,92 +71,71 @@ def open(flag, title):
             messagebox.showinfo("Success", "Text Detection loaded")
         text_detection_setting.set(file_td)
 
+def exec_text_detection(i):
+    device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor()
+    ])
+
+    tensor_image = transform(i)
+    masked_image = np.array(transforms.Resize((256, 256))(i))
+    tensor_image = (tensor_image-torch.mean(tensor_image))/torch.std(tensor_image)
+    tensor_image_batched = tensor_image.unsqueeze(0)
+
+    result = unet(tensor_image_batched)
+    res = torch.squeeze(result.detach().to(device))
+    res = (res>0.2).float()
+
+    for i in range(3):
+        masked_image[:, :, i] = (1 - np.array(res)) * np.array(masked_image[:, :, i])
+            
+    return masked_image, res
+
 def exec(option, canvas):
-    print("GAN SETTING:", gan_setting.get())
-    folder = gan_setting.get()
-    if option == 1:
-        #TextDetection -case
-        folder = text_detection_setting.get()
-        device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        if folder == "":
-            messagebox.showerror("Error", f"Select a folder containing the model file from the button \"Setting TextDetection\"")
-        elif image.get() == "":
-            messagebox.showerror("Error", f"Load an image")
-        else:
-            i = Image.open(image.get())
-            if len(i.mode)!= 3:
-                messagebox.showerror("Error", "Wrong number of channels for image")
-                return 1
-            
-            transform = transforms.Compose([
-                transforms.Resize((256, 256)),
-                transforms.ToTensor()
-            ])
-
-
-            tensor_image = transform(i)
-            masked_image = np.array(transforms.Resize((256, 256))(i))
-            tensor_image = (tensor_image-torch.mean(tensor_image))/torch.std(tensor_image)
-            tensor_image_batched = tensor_image.unsqueeze(0)
-
-            result = unet(tensor_image_batched)
-            res = torch.squeeze(result.detach().to(device))
-            res= (res>0.2).float()
-            
-            #mask - da usare per gan - valori 0/255: 
-            arr_pred=(np.array(res)* 255).astype(np.uint8)
-            
-            for i in range(3):
-                masked_image[:, :, i] = (1 - np.array(res)) * np.array(masked_image[:, :, i])
-            im = Image.fromarray(masked_image)
-            im = im.resize(canvas_size, Image.Resampling.LANCZOS)
-
-            image_tk = ImageTk.PhotoImage(im)
-            canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-            canvas.image = image_tk
-    elif option == 2:
-        pass
-    elif option == 3:
-        if folder == "":
-            messagebox.showerror("Error", f"Select a folder containing the generators file from the button \"Setting Inpainting\"")
-        elif image.get() == "":
-            messagebox.showerror("Error", f"Load an image")
-        elif mask.get() == "":
+    gan_folder = gan_setting.get()
+    unet_folder = text_detection_setting.get()
+    if image.get() == "":
+        messagebox.showerror("Error", f"Load an image")
+        return 1
+    i = Image.open(image.get())
+    if len(i.mode)!= 3:
+        messagebox.showerror("Error", "Wrong number of channels for image")
+        return 1
+    if option == 3:
+        if mask_image.get() == "":
             messagebox.showerror("Error", f"Load a mask")
-        else:
-            i = Image.open(image.get())
-            if len(i.mode)!= 3:
-                messagebox.showerror("Error", "Wrong number of channels for image")
-                return 1
-            m = Image.open(mask.get())
-            transform = transforms.Compose([
-                #transforms.Resize((256, 256)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
-            ])
+            return 1
+        m = Image.open(mask_image.get())
+    if (option == 1 or option == 2) and unet_folder == "":
+        messagebox.showerror("Error", f"Select a folder containing the model file from the button \"Setting TextDetection\"")
+        return 1
+    elif option == 3 and gan_folder == "":
+        messagebox.showerror("Error", f"Select a folder containing the generators file from the button \"Setting Inpainting\"")
+        return 1
+    if option == 1:
+        result, mask = exec_text_detection()
+        im = Image.fromarray(result)
+    elif option == 2:
+        res, mask = exec_text_detection() 
+        arr_pred=(np.array(mask)* 255).astype(np.uint8)
+        mask = Image.fromarray(arr_pred)
+        maskered = gan.pre_processing(i, mask)
+        result = gan(maskered)
+        im = transforms.ToPILImage()(result)
+    elif option == 3:
+        maskered = gan.pre_processing(i, m)
+        result = gan(maskered)
+        vutils.save_image(result.detach().cpu(), "imagina_nel_file.png", nrow=8, normalize=True, pad_value=0.3)
+        res = vutils.make_grid(result.detach(), normalize=True)
+        im = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+        im = Image.fromarray(im)
 
-            transformM = transforms.Compose([
-                transforms.Resize((256, 256)),
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,)),
-                transforms.Grayscale(num_output_channels=1),
-            ])
-
-            tensor_image = transform(i)
-            tensor_mask = transformM(m)
-            tensor_image_batched = tensor_image.unsqueeze(0)
-            tensor_mask_batched = tensor_mask.unsqueeze(0)
-
-            result = gan.forward(tensor_image_batched, tensor_mask_batched)
-
-            res = vutils.make_grid(result.detach(), normalize=True)
-            ndarr = ndarr = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
-            im = Image.fromarray(ndarr)
-            im = im.resize(canvas_size, Image.ANTIALIAS)
-
-            image_tk = ImageTk.PhotoImage(im)
-            canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-            canvas.image = image_tk
+    im = im.resize(canvas_size)
+    image_tk = ImageTk.PhotoImage(im)
+    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    canvas.image = image_tk
 
 
 def esegui_operazione():
@@ -187,7 +163,7 @@ def carica_immagine(flag, canvas):
         if not flag:
             image.set(filepath)
         else:
-            mask.set(filepath)
+            mask_image.set(filepath)
 
 def radio_button(frame_top):
 
@@ -267,11 +243,11 @@ def window_ex():
     global text_detection_setting
     text_detection_setting = tk.StringVar()
     global gan
-    gan = GAN32(torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'))
+    gan = TextAwareMultiGan(res=32)
     global image
     image = tk.StringVar()
-    global mask
-    mask = tk.StringVar()
+    global mask_image
+    mask_image = tk.StringVar()
 
     global opzioni_var
     opzioni_var = tk.IntVar()

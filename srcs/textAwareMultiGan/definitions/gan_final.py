@@ -2,6 +2,9 @@ import math
 import numpy as np
 import torch
 from PIL import Image
+from torchvision import transforms
+from torchvision import utils as vutils
+import torchvision.transforms.functional as F
 from ..definitions.generator32 import Generator32 as G32
 from ..definitions.generator64 import Generator64 as G64
 from ..definitions.generator128 import Generator128 as G128
@@ -31,6 +34,11 @@ class TextAwareMultiGan():
     def get_discriminator(self):
         return self.discriminators[self.resolution - 1]
 
+    def load_G_weights(self, filename, i):
+        if i >= 0 and i < 4:
+            d_file = torch.load(filename, map_location=torch.device('cpu'))
+            self.generators[i].load_state_dict(d_file)
+
     def to(self, device):
         for gen in self.generators:
             gen.to(device)
@@ -40,6 +48,9 @@ class TextAwareMultiGan():
     def save(self, d_name, g_name):
         d = self.get_discriminator()
         g = self.get_generator()
+
+        d_name += '.pth'
+        g_name += '.pth'
 
         torch.save(d.state_dict(), d_name)
         torch.save(g.state_dict(), g_name)
@@ -64,27 +75,43 @@ class TextAwareMultiGan():
     def eval_discriminator(self):
         self.discriminators[self.resolution - 1].eval()
 
-    def pre_processing(image, mask):
-        i = create_pyramid_image(image)
+    def pre_processing(self, image, mask):
+        toTransform = [
+            transforms.ToTensor(),
+        ]
+
+        tran_text = transforms.Compose(toTransform)
+        toTransformGrey = [
+            transforms.ToTensor(),
+            transforms.Grayscale(num_output_channels=1)
+        ]
+        tran_mask = transforms.Compose(toTransformGrey)
+        
+        i = create_pyramid_image(image, blur=True)
         m = create_pyramid_image(mask)
 
-        input = i * (1 - m)
-        mask_array = np.array(m)
-        input_array = np.array(input)
+        text = tran_text(i)
+        mask = tran_mask(m)
 
-        final_input = np.concatenate((input_array, mask_array), axis=2)
-        final_input = Image.fromarray(final_input)
+        input = text * (1 - mask)
+        input = torch.cat((input, (1 - mask)), dim=0)
 
-        return final_input
+        input = transforms.ToPILImage()(input)
+
+        input.save("image.png")
+        img = Image.open("image.png").convert('RGBA')
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+        input = transform(input)
+        img = transform(img)
+        vutils.save_image(img.detach().cpu(), "imagina_nel_file.png", nrow=8, normalize=True, pad_value=0.3)
+        return input
 
     def forward(self, batch):
 
         z_array = []
-        start = 0
         for res in range(self.resolution):
-            r = self.get_resolution()
-            z_array.append(batch[..., start:(r+start), 0:r])
-            start += r
+            r = pow(2, res + 5)
+            z_array.append(batch[..., (r-32):(2*r-32), 0:r])
 
         x = []
 
@@ -92,7 +119,7 @@ class TextAwareMultiGan():
             g = self.generators[res]
             z = z_array[res]
             x.append(g(z, *x))
-        
+
         return x[-1]
 
     def __call__(self, inputs):

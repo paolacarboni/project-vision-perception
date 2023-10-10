@@ -26,7 +26,6 @@ def is_file(file: str, args):
     return False
 
 def is_folder(folder: str, args):
-    print("La folder è: ", folder)
     if os.path.exists(folder):
         if os.path.isdir(folder):
             return True

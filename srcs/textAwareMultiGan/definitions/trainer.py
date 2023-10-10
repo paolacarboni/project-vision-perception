@@ -146,7 +146,7 @@ class GanTrainer():
             self.g_optimizer.step()
         return lossD, lossG, prediction
 
-    def train(self, train_dataset, validation_dataset, save_folder, offset = 0, mode = ['d', 'g', 'g'], epochs=100):
+    def train(self, train_dataset, validation_dataset, save_folder, offset = 0, mode = ['d', 'g', 'g', 'g', 'g'], epochs=100):
         # ciclo sulle epoche per ogni batch
         valid_loss = 1000.0
         self.counter = 0
@@ -158,6 +158,9 @@ class GanTrainer():
         # List of training losses
         valid_losses = []
 
+        d_counter = 0
+        g_counter = 0
+
         for epoch in tqdm(range(epochs), desc = "Epochs", leave = False):
             epoch_d_loss = 0
             epoch_g_loss = 0
@@ -166,9 +169,29 @@ class GanTrainer():
                 d = True
                 g = False
             else:
-                flag = mode[(epoch - offset) % len(mode)]
-                d = flag == 'd' or flag == 'b' 
-                g = flag == 'g'or flag == 'b'
+                if epoch == 0:
+                    d = True
+                    g = False
+                elif d_counter == 3:
+                    d_counter = 0
+                    g = True
+                    d = False
+                elif g_counter == 3:
+                    g_counter = 0
+                    g = False
+                    d = True
+                else:
+                    if epoch_d_loss[epoch - 1] < 1.05:
+                        g = True
+                        d = False
+                        g_counter += 1
+                    else:
+                        g = False
+                        d = True
+                        d_counter += 1
+                #flag = mode[(epoch - offset) % len(mode)]
+                #d = flag == 'd' or flag == 'b' 
+                #g = flag == 'g'or flag == 'b'
             batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
                 input_b = batch['inputs']
