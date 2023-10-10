@@ -124,14 +124,14 @@ class GanTrainer():
         avg_valid_loss = valid_loss / len(validation_dataset)
         return avg_valid_loss
     
-    def _train(self, input_b, real_b, epoch, offset, mode):
+    def _train(self, input_b, real_b, d, g):
 
-        enable_d = epoch < offset or (epoch % 2 != offset % 2) or mode == 'union'
+        enable_d = d
         if enable_d:
             self.model.train_discriminator()
             self.d_optimizer.zero_grad()
 
-        enable_g = epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union')
+        enable_g = g
         if enable_g:
             self.model.train_generator()
             self.g_optimizer.zero_grad()
@@ -146,7 +146,7 @@ class GanTrainer():
             self.g_optimizer.step()
         return lossD, lossG, prediction
 
-    def train(self, train_dataset, validation_dataset, save_folder, offset = 1, mode = "swap", epochs=100):
+    def train(self, train_dataset, validation_dataset, save_folder, offset = 0, mode = ['d', 'g', 'g'], epochs=100):
         # ciclo sulle epoche per ogni batch
         valid_loss = 1000.0
         self.counter = 0
@@ -162,6 +162,13 @@ class GanTrainer():
             epoch_d_loss = 0
             epoch_g_loss = 0
 
+            if epoch < offset:
+                d = True
+                g = False
+            else:
+                flag = mode[(epoch - offset) % len(mode)]
+                d = flag == 'd' or flag == 'b' 
+                g = flag == 'g'or flag == 'b'
             batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
                 input_b = batch['inputs']
@@ -169,21 +176,21 @@ class GanTrainer():
                 self.model.eval_generator()
                 self.model.eval_discriminator()
 
-                lossD, lossG, prediction = self._train(input_b, real_b, epoch, offset, mode)
+                lossD, lossG, prediction = self._train(input_b, real_b, d, g)
 
                 epoch_d_loss += lossD.tolist()
                 epoch_g_loss += lossG.tolist() 
 
                 batch_pbar.set_postfix({'v': self.min_validation_loss, 'd': lossD.item(), 'g': lossG.item(), 'p': self.counter})
 
-                avg_epoch_d_loss = epoch_d_loss / len(train_dataset)
-                train_d_losses.append(avg_epoch_d_loss)
+            avg_epoch_d_loss = epoch_d_loss / len(train_dataset)
+            train_d_losses.append(avg_epoch_d_loss)
 
-                avg_epoch_g_loss = epoch_g_loss / len(train_dataset)
-                train_g_losses.append(avg_epoch_g_loss)
+            avg_epoch_g_loss = epoch_g_loss / len(train_dataset)
+            train_g_losses.append(avg_epoch_g_loss)
 
             print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
-            if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
+            if g:
 
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
