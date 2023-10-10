@@ -44,12 +44,11 @@ def train_gan(dataset_path, save_path, batch_size, resolution, epochs, lr_g=0.00
     trainer: GanTrainer = GanTrainer(gan, optimizer_d, optimizer_g, "gan", patience=patience, min_delta=min_delta)
     trainer.to(device)
 
-    train_d_losses, train_g_losses, valid_losses = trainer.train(batch_size, train_dataloader, val_dataloader, epochs=epochs)
+    train_d_losses, train_g_losses, valid_losses = trainer.train(train_dataloader, val_dataloader, save_path, epochs=epochs)
 
-    date = datetime.today().strftime('%Y-%m-%d')
-    lossname = "loss_GAN_" + date
-    d_name = "discriminator_" + date + '.pth'
-    g_name = "generator_" + date + '.pth'
+    lossname = "loss_GAN"
+    d_name = "discriminator_" + str(gan.get_resolution())
+    g_name = "generator_" + str(gan.get_resolution())
 
     np.savez(os.path.join(save_path, lossname), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
     gan.save(os.path.join(save_path, d_name), os.path.join(save_path, g_name))

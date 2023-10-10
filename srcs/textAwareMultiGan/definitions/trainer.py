@@ -3,7 +3,17 @@ import torch
 import torch.nn as nn
 import datetime
 import torch.nn.functional as F
+import lpips
 from tqdm.auto import tqdm
+from torchvision import utils as vutils
+
+def save_imgs(imgs, basename):
+    try:
+        filename = basename + '.jpg'
+        vutils.save_image(imgs.detach().cpu(), filename, nrow=8, normalize=True, pad_value=0.3)
+    except Exception as e:
+        error = Exception(f'Error: {__file__}: save_imgs: {str(e)}')
+        raise error
 
 class GanTrainer():
     def __init__(self, model, optimizer_d, optimizer_g, chk_name, patience=1, min_delta=0):
@@ -18,6 +28,7 @@ class GanTrainer():
         self.adversarial_loss = nn.BCELoss()
         self.pixelwise_loss = nn.L1Loss()
         self.device = torch.device('cpu')
+        self.loss_fn_alex = lpips.LPIPS(net='vgg')
     
     def save_model(self, path, model_name):
         '''
@@ -31,6 +42,7 @@ class GanTrainer():
         self.device = device
         self.adversarial_loss.to(device)
         self.pixelwise_loss.to(device)
+        self.loss_fn_alex.to(device)
 
     def _early_stop(self, validation_loss):
         if validation_loss < self.min_validation_loss:
@@ -79,7 +91,7 @@ class GanTrainer():
         pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
         lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
-        return lossD, lossG
+        return lossD, lossG, prediction
 
     def evaluate(self, validation_dataset):
         valid_loss = 0.0
@@ -90,10 +102,22 @@ class GanTrainer():
 
                 input_b = batch['inputs']
                 real_b = batch['reals']
-                
-                lossD, lossG = self._exec(input_b, real_b, False, False) 
 
-                valid_loss += lossG.tolist()
+                batch_size = len(input_b)
+                input_b = input_b.to(self.device)
+                real_b = real_b.to(self.device)
+                r = self.model.get_resolution()
+                real_b = real_b[..., (r-32):((2*r)-32), 0:r]
+
+                prediction = self.model(input_b)
+
+                #pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+                #lossG = pixelwise_loss_value
+
+                lossG = self.loss_fn_alex(real_b, prediction)
+                lossG = lossG.mean()
+
+                valid_loss += lossG
                 batch_pbar.set_postfix({'validation_loss': lossG.tolist(), 'patience': self.counter})
         avg_valid_loss = valid_loss / len(validation_dataset)
         return avg_valid_loss
@@ -110,7 +134,7 @@ class GanTrainer():
             self.model.train_generator()
             self.g_optimizer.zero_grad()
 
-        lossD, lossG = self._exec(input_b, real_b, enable_d, enable_g)
+        lossD, lossG, prediction = self._exec(input_b, real_b, enable_d, enable_g)
 
         if enable_d:
             lossD.backward()
@@ -118,9 +142,9 @@ class GanTrainer():
         if enable_g:
             lossG.backward()
             self.g_optimizer.step()
-        return lossD, lossG
+        return lossD, lossG, prediction
 
-    def train(self, batch_size, train_dataset, validation_dataset, offset = 1, mode ="swap", epochs=100):
+    def train(self, train_dataset, validation_dataset, save_folder, offset = 1, mode ="swap", epochs=100):
         # ciclo sulle epoche per ogni batch
         valid_loss = 1000.0
         self.counter = 0
@@ -143,7 +167,7 @@ class GanTrainer():
                 self.model.eval_generator()
                 self.model.eval_discriminator()
 
-                lossD, lossG = self._train(input_b, real_b, epoch, offset, mode)
+                lossD, lossG, prediction = self._train(input_b, real_b, epoch, offset, mode)
 
                 epoch_d_loss += lossD.tolist()
                 epoch_g_loss += lossG.tolist() 
@@ -157,7 +181,10 @@ class GanTrainer():
                 train_g_losses.append(avg_epoch_g_loss)
 
             print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
-            if epoch >= offset + 2 and ((epoch % 2 == offset % 2) or mode == 'union'):
+            if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
+
+                save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
+
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 
