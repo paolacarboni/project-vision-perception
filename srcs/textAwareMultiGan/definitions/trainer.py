@@ -4,6 +4,7 @@ import torch.nn as nn
 import datetime
 import torch.nn.functional as F
 import lpips
+import numpy as np
 from tqdm.auto import tqdm
 from torchvision import utils as vutils
 
@@ -88,7 +89,8 @@ class GanTrainer():
         lossD = lossD_real + lossD_fake
 
         lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
-        pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+        #pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
+        pixelwise_loss_value = self.loss_fn_alex(prediction, real_b).mean()
         lossG = 0.1 * lossG_adv + pixelwise_loss_value
 
         return lossD, lossG, prediction
@@ -144,7 +146,7 @@ class GanTrainer():
             self.g_optimizer.step()
         return lossD, lossG, prediction
 
-    def train(self, train_dataset, validation_dataset, save_folder, offset = 1, mode ="swap", epochs=100):
+    def train(self, train_dataset, validation_dataset, save_folder, offset = 1, mode = "swap", epochs=100):
         # ciclo sulle epoche per ogni batch
         valid_loss = 1000.0
         self.counter = 0
@@ -184,7 +186,11 @@ class GanTrainer():
             if epoch >= offset and ((epoch % 2 == offset % 2) or mode == 'union'):
 
                 save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
-
+                self.model.save(
+                    os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
+                    os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
+                )
+                np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses)
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 
