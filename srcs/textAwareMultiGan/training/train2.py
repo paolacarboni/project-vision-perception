@@ -29,7 +29,7 @@ def do_dataloader(batch_size, path):
 
     return train_loader, validation_loader
 
-def train_gan(dataset_path, save_path, batch_size, resolution, epochs, lr_g=0.001, lr_d=0.001, betas_d=(0.5,0.99), betas_g=(0.5,0.99), patience=3, min_delta=0.02):
+def train_gan(dataset_path, save_path, batch_size, resolution, epochs, generators = [], lr_g=0.001, lr_d=0.001, betas_d=(0.5,0.99), betas_g=(0.5,0.99), patience=3, min_delta=0.02):
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -37,6 +37,9 @@ def train_gan(dataset_path, save_path, batch_size, resolution, epochs, lr_g=0.00
 
     gan: TextAwareMultiGan = TextAwareMultiGan(resolution)
     gan.to(device)
+
+    for i in range(len(generators)):
+        gan.load_G_weights(generators[i], i)
 
     optimizer_d = (torch.optim.Adam(gan.get_discriminator().parameters(), lr=lr_d, betas=betas_d))
     optimizer_g = (torch.optim.Adam(gan.get_generator().parameters(), lr=lr_g, betas=betas_g))

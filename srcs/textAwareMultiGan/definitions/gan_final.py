@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
-from torchvision import utils as vutils
 import torchvision.transforms.functional as F
 from ..definitions.generator32 import Generator32 as G32
 from ..definitions.generator64 import Generator64 as G64
@@ -38,6 +37,15 @@ class TextAwareMultiGan():
         if i >= 0 and i < 4:
             d_file = torch.load(filename, map_location=torch.device('cpu'))
             self.generators[i].load_state_dict(d_file)
+    
+    def load_D_weights(self, filename, i):
+        if i >= 0 and i < 4:
+            d_file = torch.load(filename, map_location=torch.device('cpu'))
+            self.discriminators[i].load_state_dict(d_file)
+
+    def load_D(self, filename):
+        d_file = torch.load(filename, map_location=torch.device('cpu'))
+        self.discriminators[self.resolution - 1].load_state_dict(d_file)
 
     def to(self, device):
         for gen in self.generators:
@@ -98,12 +106,9 @@ class TextAwareMultiGan():
 
         input = transforms.ToPILImage()(input)
 
-        input.save("image.png")
-        img = Image.open("image.png").convert('RGBA')
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
         input = transform(input)
-        img = transform(img)
-        vutils.save_image(img.detach().cpu(), "imagina_nel_file.png", nrow=8, normalize=True, pad_value=0.3)
+
         return input
 
     def forward(self, batch):
