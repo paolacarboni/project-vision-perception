@@ -189,9 +189,9 @@ class GanTrainer():
                         g = False
                         d = True
                         d_counter += 1
-                #flag = mode[(epoch - offset) % len(mode)]
-                #d = flag == 'd' or flag == 'b' 
-                #g = flag == 'g'or flag == 'b'
+                flag = mode[(epoch - offset) % len(mode)]
+                d = flag == 'd' or flag == 'b' 
+                g = flag == 'g'or flag == 'b'
             batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
                 input_b = batch['inputs']
