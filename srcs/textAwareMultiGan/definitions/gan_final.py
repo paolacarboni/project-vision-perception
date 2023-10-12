@@ -123,9 +123,9 @@ class TextAwareMultiGan():
         for res in range(self.resolution):
             g = self.generators[res]
             z = z_array[res]
-            x.append(g(z, *x))
+            x.insert(0, g(z, *x))
 
-        return x[-1]
+        return x[0]
 
     def __call__(self, inputs):
         return self.forward(inputs)
