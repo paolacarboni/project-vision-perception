@@ -169,10 +169,6 @@ class GanTrainer():
                 d = True
                 g = False
             else:
-                if epoch == 15:
-                    mode = ['d', 'g', 'g', 'g']
-                if epoch == 30:
-                    mode = ['d', 'g', 'g']
                 flag = mode[(epoch - offset) % len(mode)]
                 d = flag == 'd' or flag == 'b' 
                 g = flag == 'g'or flag == 'b'
