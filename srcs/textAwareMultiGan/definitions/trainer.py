@@ -160,8 +160,8 @@ class GanTrainer():
         # List of training losses
         valid_losses = []
 
-        d_counter = 0
-        g_counter = 0
+        valid_loss = 1.0
+        lossD = 1.1
 
         for epoch in tqdm(range(epochs), desc = "Epochs", leave = False):
             epoch_d_loss = 0
@@ -174,6 +174,9 @@ class GanTrainer():
                 flag = mode[(epoch - offset) % len(mode)]
                 d = flag == 'd' or flag == 'b' 
                 g = flag == 'g'or flag == 'b'
+                if lossD <= 1.05:
+                    d = False
+                    g = True
             batch_pbar = tqdm(train_dataset, desc = "Training - Batch", leave = True)
             for batch in batch_pbar:
                 input_b = batch['inputs']
@@ -196,26 +199,25 @@ class GanTrainer():
 
             print('e_{}: D(x)={:.4f} D(G(z))={:.4f}'.format(epoch, avg_epoch_d_loss, avg_epoch_g_loss))
             if g:
-
                 # validation loss
                 valid_loss = self.evaluate(validation_dataset)
 
-                # print('val_loss', valid_loss)
-                valid_losses.append(valid_loss)
-                print('V(x):{}'.format(valid_loss))
-                if self._early_stop(valid_loss):
-                    #self.save_model('GAN')
-                    break
-                #saving
-                save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
-                self.model.save(
-                    os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
-                    os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
-                )
-                try:
-                    np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
-                except Exception as e:
-                    print(e)
+            # print('val_loss', valid_loss)
+            valid_losses.append(valid_loss)
+            print('V(x):{}'.format(valid_loss))
+            if self._early_stop(valid_loss):
+                #self.save_model('GAN')
+                break
+            #saving
+            save_imgs(prediction, os.path.join(save_folder, "train_e_{}".format(epoch)))
+            self.model.save(
+                os.path.join(save_folder, "discriminator_{}_{}".format(self.model.get_resolution(), epoch)),
+                os.path.join(save_folder, "generator_{}_{}".format(self.model.get_resolution(), epoch)),
+            )
+            try:
+                np.savez(os.path.join(save_folder, "loss_{}".format(epoch)), array1=train_d_losses, array2=train_g_losses, array3=valid_losses)
+            except Exception as e:
+                print(e)
 
         return train_d_losses, train_g_losses, valid_losses
 

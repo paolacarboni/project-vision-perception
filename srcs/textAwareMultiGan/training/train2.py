@@ -29,7 +29,7 @@ def do_dataloader(batch_size, path):
 
     return train_loader, validation_loader
 
-def train_gan(dataset_path, save_path, batch_size, resolution, epochs, generators = [], lr_g=0.001, lr_d=0.001, betas_d=(0.5,0.99), betas_g=(0.5,0.99), patience=3, min_delta=0.02):
+def train_gan(dataset_path, save_path, batch_size, resolution, epochs, generators = [], mode=['d','g','g','g','g'], lr_g=0.001, lr_d=0.001, betas_d=(0.5,0.99), betas_g=(0.5,0.99), patience=3, min_delta=0.02):
 
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -47,7 +47,7 @@ def train_gan(dataset_path, save_path, batch_size, resolution, epochs, generator
     trainer: GanTrainer = GanTrainer(gan, optimizer_d, optimizer_g, "gan", patience=patience, min_delta=min_delta)
     trainer.to(device)
 
-    train_d_losses, train_g_losses, valid_losses = trainer.train(train_dataloader, val_dataloader, save_path, epochs=epochs)
+    train_d_losses, train_g_losses, valid_losses = trainer.train(train_dataloader, val_dataloader, save_path, epochs=epochs, mode=mode)
 
     lossname = "loss_GAN"
     d_name = "discriminator_" + str(gan.get_resolution())
