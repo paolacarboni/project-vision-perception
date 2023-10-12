@@ -119,7 +119,7 @@ class GanTrainer():
                 lossG = self.loss_fn_alex(real_b, prediction)
                 lossG = lossG.mean()
 
-                valid_loss += lossG
+                valid_loss += lossG.tolist()
                 batch_pbar.set_postfix({'validation_loss': lossG.tolist(), 'patience': self.counter})
         avg_valid_loss = valid_loss / len(validation_dataset)
         return avg_valid_loss
