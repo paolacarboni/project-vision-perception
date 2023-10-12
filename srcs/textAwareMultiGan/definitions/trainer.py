@@ -7,6 +7,7 @@ import lpips
 import numpy as np
 from tqdm.auto import tqdm
 from torchvision import utils as vutils
+from ..definitions.textureLoss import TextureLoss
 
 def save_imgs(imgs, basename):
     try:
@@ -28,6 +29,7 @@ class GanTrainer():
         self.counter = 0
         self.adversarial_loss = nn.BCELoss()
         self.pixelwise_loss = nn.L1Loss()
+        self.texture_loss = TextureLoss()
         self.device = torch.device('cpu')
         self.loss_fn_alex = lpips.LPIPS(net='vgg')
     
@@ -244,9 +246,13 @@ class GanTrainer():
 
                 D_fake = D(prediction)
 
-                lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake),  lab_real)
+                lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
                 pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-                lossG = 0.1 * lossG_adv + pixelwise_loss_value
+                if self.model.get_resolution() == 256:
+                    texture_loss_value = self.texture_loss(prediction, real_b)
+                    lossG = 0.1 * lossG_adv + pixelwise_loss_value + 10 * texture_loss_value
+                else:
+                    lossG = 0.1 * lossG_adv + pixelwise_loss_value
                 
                 binary_losses += lossG.item()
 
