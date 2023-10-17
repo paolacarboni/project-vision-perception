@@ -1,97 +1,138 @@
+import math
+import numpy as np
 import torch
-import torch.nn as nn
-from ..definitions.patchGanDiscriminator import PatchGANDiscriminator
+import os
+from torchvision import utils as vutils
+from PIL import Image
+from torchvision import transforms
+import torchvision.transforms.functional as F
+from ..definitions.generator32 import Generator32 as G32
+from ..definitions.generator64 import Generator64 as G64
+from ..definitions.generator128 import Generator128 as G128
+from ..definitions.generator256 import Generator256 as G256
+from ..definitions.patchGanDiscriminator import PatchGANDiscriminator as PD
+from ..definitions.utils import create_pyramid_image
 
-def load_weights(NN, filename, device):
-    try:
-        d_file = torch.load(filename, map_location=torch.device(device))
-        NN.load_state_dict(d_file)
-        return 0
-    except FileNotFoundError:
-        print(f"Error: {__file__}: load_weights: File '{filename}' doesn't exist.")
-    except PermissionError:
-        print(f"Error: {__file__}: load_weights: Permission denied: '{filename}'.")
-    except Exception as e:
-        print(f"Error: {__file__}: load_weights: Error: {e}")
-    return 1
+class TextAwareMultiGan():
+    def __init__(self, res = 256):
+        self.generators = [G32(), G64(), G128(), G256()]
+        self.discriminators = [PD(3, 24), PD(3, 24), PD(3, 24), PD(3, 24)]
+        self.set_resolution(res)
 
-def save_nn(neuralN, filename):
-    try:
-        torch.save(neuralN.state_dict(), filename)
-    except Exception as e:
-        raise e
+    def set_resolution(self, res):
+        resolution = int(math.log(res, 2) - 4)
+        if resolution not in [1, 2, 3, 4]:
+            raise Exception("Error: bad number")
+        self.resolution = resolution
+        self.D = self.discriminators[resolution - 1]
 
-class GAN():
-    def __init__(self, device):
-        self.device = device
-        self.adversarial_loss = nn.BCELoss()
-        self.pixelwise_loss = nn.L1Loss()
-        self.D = PatchGANDiscriminator(3, 24).to(device)
-        self.generators = []
-        self.res = 0
-        self.G = None
-        self.optimizerD = None
-        self.optimizerG = None
+    def get_resolution(self):
+        return pow(2, self.resolution + 4)
 
-    def load_D_weights(self, filename):
-        try:
-            load_weights(self.D, filename, self.device)
-            print("Discriminator Weights loaded")
-            return 0
-        except Exception as e:
-            print(str(e))
-            return 1
+    def get_generator(self):
+        return self.generators[self.resolution - 1]
 
-    def load_G_weights(self, filename, i=0):
-        if len(self.generators) < i + 1:
-            print("Error: generator not defined")
-            return 1
-        try:
-            load_weights(self.generators[i], filename, self.device)
-            print("Generetors Weights loaded")
-        except Exception as e:
-            print(str(e))
-            return 0
+    def get_discriminator(self):
+        return self.discriminators[self.resolution - 1]
 
-    def load(self, d_filename, g_filenames: []):
-        if len(g_filenames) > len(self.generators):
-            raise Exception("Error: wrong number of files")
-        try:
-            load_weights(self.D, d_filename, self.device)
-            i = 0
-            for f in g_filenames:
-                load_weights(self.generators[i], f, self.device)
-                i += 1
-            print("Weights loaded")
-            return 0
-        except Exception as e:
-            print(str(e))
-            return 1
+    def load_G_weights(self, filename, i):
+        if i >= 0 and i < 4:
+            d_file = torch.load(filename, map_location=torch.device('cpu'))
+            self.generators[i].load_state_dict(d_file)
+    
+    def load_D_weights(self, filename, i):
+        if i >= 0 and i < 4:
+            d_file = torch.load(filename, map_location=torch.device('cpu'))
+            self.discriminators[i].load_state_dict(d_file)
 
-    def set_D_optimizer(self, optimizer):
-        self.optimizerD = optimizer
+    def load_D(self, filename):
+        d_file = torch.load(filename, map_location=torch.device('cpu'))
+        self.discriminators[self.resolution - 1].load_state_dict(d_file)
 
-    def set_G_optimizer(self, optimizer):
-        self.optimizerG = optimizer
+    def to(self, device):
+        for gen in self.generators:
+            gen.to(device)
+        for dis in self.discriminators:
+            dis.to(device)
 
-    def get_D(self):
-        return self.D
+    def save(self, d_name, g_name):
+        d = self.get_discriminator()
+        g = self.get_generator()
 
-    def get_G(self):
-        return self.G
+        d_name += '.pth'
+        g_name += '.pth'
 
-    def exec_epoch(self):
-        if not self.optimizerD:
-            raise Exception("OptimizerD not defined")
-        if not self.optimizerG:
-            raise Exception("OptimizerG not defined")
+        torch.save(d.state_dict(), d_name)
+        torch.save(g.state_dict(), g_name)
 
-    def save(self, d_filename, g_filename):
-        try:
-            save_nn(self.D, d_filename)
-            if self.G is not None:
-                save_nn(self.G, g_filename)
-            return 0
-        except Exception as e:
-            print(str(e))
-            return 1
+    def train(self):
+        self.generators[self.resolution - 1].train()
+        self.discriminators[self.resolution - 1].train()
+
+    def eval(self):
+        self.generators[self.resolution - 1].eval()
+        self.discriminators[self.resolution - 1].eval()
+
+    def train_generator(self):
+        self.generators[self.resolution - 1].train()
+
+    def train_discriminator(self):
+        self.discriminators[self.resolution - 1].train()
+
+    def eval_generator(self):
+        self.generators[self.resolution - 1].eval()
+
+    def eval_discriminator(self):
+        self.discriminators[self.resolution - 1].eval()
+
+    def pre_processing(self, image, mask):
+        toTransform = [
+            transforms.ToTensor(),
+        ]
+
+        tran_text = transforms.Compose(toTransform)
+        toTransformGrey = [
+            transforms.ToTensor(),
+            transforms.Grayscale(num_output_channels=1)
+        ]
+        tran_mask = transforms.Compose(toTransformGrey)
+        
+        i = create_pyramid_image(image, blur=True)
+        m = create_pyramid_image(mask)
+
+        text = tran_text(i)
+        mask = tran_mask(m)
+
+        input = text * (1 - mask)
+
+        dim = input.dim() - 3
+        if dim == 0:
+            input = input.unsqueeze(0)
+        input = torch.cat((input, (1 - mask)), dim=0)
+        if dim == 0:
+            input = input.squeeze(0)
+        input = transforms.ToPILImage()(input)
+
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
+        input = transform(input)
+
+        return input
+
+    def forward(self, batch):
+
+        z_array = []
+        for res in range(self.resolution):
+            r = pow(2, res + 5)
+            z_array.append(batch[..., (r-32):(2*r-32), 0:r])
+
+        x = []
+
+        for res in range(self.resolution):
+            g = self.generators[res]
+            z = z_array[res]
+            x.insert(0, g(z, *x))
+
+        return x[0]
+
+    def __call__(self, inputs):
+        return self.forward(inputs)
