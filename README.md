@@ -1,4 +1,5 @@
 # About the project
+![My Image](interface1.png)  
 This project was developed for the Vision and Perception course for the academic year 2022-2023 at Sapienza University of Rome.
 The goal is to remove text from images. To achieve this goal, two different neural networks have been implemented.
 * UNet: to obtain masks covering the text in the images
@@ -27,5 +28,5 @@ The weights of the networks we obtained are available at the link: https://drive
 * UNet
   Run ```make train``` and select text
 ## Testing
-You can launch an interface that allows text detection, inpainting, or text removal by using ```make exec```. To do this, include the networks weights in the "resources/neuralNetworks" folder.
-  
+You can launch an interface that allows text detection, inpainting, or text removal by using ```make exec```. To do this, include the networks weights in the "resources/neuralNetworks" folder.  
+![My Image](interface2.png)
