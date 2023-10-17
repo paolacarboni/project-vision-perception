@@ -2,7 +2,7 @@
 This project was developed for the Vision and Perception course for the academic year 2022-2023 at Sapienza University of Rome.
 The goal is to remove text from images. To achieve this goal, two different neural networks have been implemented.
 * UNet: to obtain masks covering the text in the images
-* TextAwareMultiGan: to impainting
+* TextAwareMultiGan: to impainting    
 The weights of the networks we obtained are available at the link: https://drive.google.com/drive/folders/10KcpzptTwK6jJJdPxIUwdt1X2hTUj2_Z?usp=drive_link
 # Getting Started
 ## Installation
