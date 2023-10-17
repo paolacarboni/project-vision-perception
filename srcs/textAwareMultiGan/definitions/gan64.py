@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from ..definitions.gan import GAN
 from ..definitions.generator32 import Generator32
 from ..definitions.generator64 import Generator64
@@ -86,3 +87,19 @@ class GAN64(GAN):
         total_lossG /= len(dataloader_texture)
 
         return total_lossD, total_lossG, x_gen.detach().clone(), x_real_64.detach().clone(), x_corr[:, :, 32:96, 0:64].detach().clone()
+
+    def forward(self, image, mask):
+
+        i_32 = F.interpolate(image, size=(32, 32), mode='bilinear', align_corners=False)
+        m_32 = F.interpolate(mask, size=(32, 32), mode='bilinear', align_corners=False)
+        
+        i_64 = F.interpolate(image, size=(64, 64), mode='bilinear', align_corners=False)
+        m_64 = F.interpolate(mask, size=(64, 64), mode='bilinear', align_corners=False)
+
+
+        x_32 = torch.cat((i_32 * (1 - m_32), m_32), dim=1)
+        x_gen_32 = self.generators[0](x_32)
+
+        x_64 = torch.cat((i_64 * (1 - m_64), m_64), dim=1)
+        x_gen = self.G(x_64, x_gen_32)
+        return x_gen

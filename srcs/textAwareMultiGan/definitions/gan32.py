@@ -1,6 +1,8 @@
 import torch
+import torch.nn.functional as F
 from ..definitions.generator32 import Generator32
 from ..definitions.gan import GAN
+from PIL import Image, ImageFilter, ImageTk
 
 class GAN32(GAN):
     def __init__(self, device):
@@ -83,4 +85,13 @@ class GAN32(GAN):
         total_lossG /= len(dataloader_texture)
 
         return total_lossD, total_lossG, x_gen.detach().clone(), x_real.detach().clone(), x_corr.detach().clone()
-    
+
+    def forward(self, image, mask):
+
+        i_32 = F.interpolate(image, size=(32, 32), mode='bilinear', align_corners=False)
+        m_32 = F.interpolate(mask, size=(32, 32), mode='bilinear', align_corners=False)
+        
+        x_32 = torch.cat((i_32 * (1 - m_32), (1 - m_32)), dim=1)
+        x_gen = self.G(x_32)
+
+        return x_gen

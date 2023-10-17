@@ -126,8 +126,6 @@ class GAN256(GAN):
         m_128 = F.interpolate(mask, size=(128, 128), mode='bilinear', align_corners=False)
         m_256 = F.interpolate(mask, size=(256, 256), mode='bilinear', align_corners=False)
 
-        print(i_32.shape, m_32.shape)
-        print((i_32 * (1 - m_32)).shape)
         x_32 = torch.cat((i_32 * (1 - m_32), m_32), dim=1)
         x_64 = torch.cat((i_64 * (1 - m_64), m_64), dim=1)
         x_128 = torch.cat((i_128 * (1 - m_128), m_128), dim=1)
