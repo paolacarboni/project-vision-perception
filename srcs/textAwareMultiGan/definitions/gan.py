@@ -1,11 +1,7 @@
 import math
 import numpy as np
 import torch
-import os
-from torchvision import utils as vutils
-from PIL import Image
 from torchvision import transforms
-import torchvision.transforms.functional as F
 from ..definitions.generator32 import Generator32 as G32
 from ..definitions.generator64 import Generator64 as G64
 from ..definitions.generator128 import Generator128 as G128
@@ -106,11 +102,8 @@ class TextAwareMultiGan():
         input = text * (1 - mask)
 
         dim = input.dim() - 3
-        if dim == 0:
-            input = input.unsqueeze(0)
-        input = torch.cat((input, (1 - mask)), dim=0)
-        if dim == 0:
-            input = input.squeeze(0)
+        input = torch.cat((input, (1 - mask)), dim=dim)
+
         input = transforms.ToPILImage()(input)
 
         transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))])
