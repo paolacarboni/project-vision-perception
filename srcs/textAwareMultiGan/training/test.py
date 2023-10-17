@@ -4,16 +4,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torchvision import utils as vutils
-from ..definitions.gan_final import TextAwareMultiGan
+from ..definitions.gan import TextAwareMultiGan
 from ..definitions.datasets import GanDataset
-from ..definitions.trainer import GanTrainer
+from ..definitions.tester import GanTester
 
 def test_gan(gan: TextAwareMultiGan, dataset_path, batch_size: int = 32):
     
     dataset: GanDataset = GanDataset(dataset_path)
     test_loader: DataLoader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
 
-    trainer: GanTrainer = GanTrainer(gan, None, None, "GAN")
+    trainer: GanTester = GanTester(gan)
 
     metrics, predictions = trainer.test(test_loader, batch_size)
 
@@ -21,27 +21,6 @@ def test_gan(gan: TextAwareMultiGan, dataset_path, batch_size: int = 32):
 
 def analysis(resolution, dataset_path, save_path, discriminator, generators=[], loss="", batch_size = 32):
 
-    
-
-    if loss != "":
-        lossname = os.path.join(save_path, "loss_{}.png".format(pow(2, 0 + 5)))
-        data = np.load(loss)
-
-        lossD = data['array1']
-        lossG = data['array2']
-        validation = data['array3']
-
-        plt.plot(lossD, label='LossD')
-        plt.plot(lossG, label='LossG')
-        plt.plot(validation, label='Validation')
-
-        plt.legend()
-        plt.xlabel('Epoch')
-        plt.ylabel('Loss')
-        plt.title('Training {}'.format(pow(2, 0 + 5)))
-        plt.grid(True)
-        plt.savefig(lossname)
-        exit()  
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
     gan: TextAwareMultiGan = TextAwareMultiGan(resolution)
@@ -62,8 +41,12 @@ def analysis(resolution, dataset_path, save_path, discriminator, generators=[], 
     img_max_o = os.path.join(save_path, "max_original.png")
 
     with open(filename, "w") as file:
-        file.write(
-            f"Loss: {metrics['cross_entropy']},\nMSE: {metrics['MSE_entropy']},\nMin MSE: {predictions['min'][0]},\nMax MSE: {predictions['max'][0]}"
+        text = ""
+        for key in metrics:
+            text += key + ": " + str(metrics[key])
+            text += '\n'
+        file.write(text
+            #f"Loss: {metrics['cross_entropy']},\nMSE: {metrics['MSE_entropy']},\nMin MSE: {predictions['min'][0]},\nMax MSE: {predictions['max'][0]}"
         )
 
     vutils.save_image(predictions['min'][1].detach().cpu(), img_min_m, nrow=8, normalize=True, pad_value=0.3)
@@ -79,11 +62,11 @@ def analysis(resolution, dataset_path, save_path, discriminator, generators=[], 
 
         lossD = data['array1']
         lossG = data['array2']
-        #validation = data['array3']
+        validation = data['array3']
 
         plt.plot(lossD, label='LossD')
         plt.plot(lossG, label='LossG')
-        #plt.plot(validation, label='Validation')
+        plt.plot(validation, label='Validation')
 
         plt.legend()
         plt.xlabel('Epoch')
