@@ -148,7 +148,7 @@ class GanTrainer():
             self.g_optimizer.step()
         return lossD, lossG, prediction
 
-    def train(self, train_dataset, validation_dataset, save_folder, offset = 0, mode = ['d', 'g', 'g', 'g', 'g'], epochs=100):
+    def train(self, train_dataset, validation_dataset, save_folder, offset = 0, mode = ['d', 'g'], epochs=200):
         # ciclo sulle epoche per ogni batch
         valid_loss = 1000.0
         self.counter = 0
@@ -220,53 +220,3 @@ class GanTrainer():
                 print(e)
 
         return train_d_losses, train_g_losses, valid_losses
-
-    def test(self, test_dataset, o_batch_size):
-        self.model.eval()
-        metrics = {}
-        predictions = {
-            "max":[float('-inf'), None, None, None],
-            "min":[float('inf'), None, None, None]
-        }
-        binary_losses = 0
-        MSE_losses = 0
-        with torch.no_grad():
-            batch_pbar = tqdm(test_dataset, desc = "Test - Batch", leave = False)
-            for batch in batch_pbar:
-                input = batch['inputs'].to(self.device)
-                real = batch['reals'].to(self.device)
-                batch_size = len(input)
-                r = self.model.get_resolution()
-                real_b = real[..., (r-32):((2*r)-32), 0:r]
-                input_b = input[..., (r-32):((2*r)-32), 0:r]
-                D = self.model.D
-                
-                size = int((self.model.get_resolution() / 8 - 1))
-                lab_real = torch.full((batch_size, 1, size, size), 0.9).to(self.device)
-                
-                prediction = self.model(input)
-
-                D_fake = D(prediction)
-
-                lossG_adv = self.adversarial_loss(torch.sigmoid(D_fake), lab_real)
-                pixelwise_loss_value = self.pixelwise_loss(prediction, real_b)
-                if self.model.get_resolution() == 256:
-                    texture_loss_value = self.texture_loss(prediction, real_b)
-                    lossG = 0.1 * lossG_adv + pixelwise_loss_value + 10 * texture_loss_value
-                else:
-                    lossG = 0.1 * lossG_adv + pixelwise_loss_value
-                
-                binary_losses += lossG.item()
-
-                MSE_loss = F.mse_loss(prediction, real_b)
-                MSE_losses += MSE_loss.item()
-
-                if batch_size == o_batch_size:
-                    if MSE_loss > predictions['max'][0]:
-                        predictions['max'] = [MSE_loss, input_b, prediction, real_b]
-                    if MSE_loss < predictions['min'][0]:
-                        predictions['min'] = [MSE_loss, input_b, prediction, real_b]
-
-        metrics['cross_entropy'] = binary_losses / len(test_dataset)
-        metrics['MSE_entropy'] = MSE_losses / len(test_dataset)
-        return metrics, predictions

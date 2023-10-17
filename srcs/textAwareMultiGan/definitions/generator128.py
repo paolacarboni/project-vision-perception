@@ -59,12 +59,16 @@ class Generator128(nn.Module):
         self.initialize_weights()
 
     def forward(self, x_corr, x_64, x_32):
+        dim = x_corr.dim() - 3
         out1 = self.block1(x_corr)
         #x_64_u = torch.nn.functional.interpolate(x_64, size=(128, 128), mode='bilinear', align_corners=False)
         out2 = self.block2(x_64)
+        if dim == 0:
+            x_32 = x_32.unsqueeze(0)
         x_32_u = torch.nn.functional.interpolate(x_32, size=(64, 64), mode='bilinear', align_corners=False)
+        if dim == 0:
+            x_32_u = x_32_u.squeeze(0)
         out3 = self.block2(x_32_u)
-        dim = x_corr.dim() - 3
         concatenated_features = torch.cat((out1, out2, out3), dim=dim)
         out4 = self.block4(concatenated_features)
         return out4
