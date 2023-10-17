@@ -1,25 +1,23 @@
-PYTHON = python3
-PIP = pip3
+VENV = venv
+PYTHON = $(VENV)/bin/python3
+PIP = $(VENV)/bin/pip
 
-all: install run
+datasets: $(VENV)/bin/activate
+	$(PYTHON) srcs/main.py datasets
 
-init:
-	$(PYTHON) init.py
+train: $(VENV)/bin/activate
+	$(PYTHON) srcs/main.py train
 
-install:
-	$(PIP) install	-r	requirements.txt
-	$(PIP) install --upgrade -r requirements.txt
+run: $(VENV)/bin/activate
+	$(PYTHON) srcs/main.py exec
 
-datasets:
-	$(PYTHON) srcs/main.py 3
+test: $(VENV)/bin/activate
+	$(PYTHON) srcs/main.py test
 
-train:
-	$(PYTHON) srcs/main.py 2
-
-run:
-	$(PYTHON) srcs/main.py 1
+$(VENV)/bin/activate: requirements.txt
+	python3 -m venv $(VENV)
+	$(PIP) install -r requirements.txt
 
 clean:
-	rm	-rf __pycache__ *.pyc
-	rm	-rf */__pycache__ *.pyc
-	find . -type d -name __pycache__ -exec rm -r {} \;
+	rm -rf __pycache__
+	rm -rf $(VENV)
