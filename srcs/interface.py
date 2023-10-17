@@ -9,11 +9,22 @@ import shutil
 import numpy as np
 from torchvision import transforms
 from torchvision import utils as vutils
-from textAwareMultiGan.definitions.gan_final import TextAwareMultiGan
+from textAwareMultiGan.definitions.gan import TextAwareMultiGan
 from textAwareMultiGan.training.saver import save_imgs
 from textDetection.definitions.uNetTextDetection import UNetTextDetection, load_pretrained_model
 
 canvas_size = (256, 256)
+
+def conta_file_in_cartella(cartella):
+    try:
+        elenco_file = os.listdir(cartella)
+        numero_file = len(elenco_file)
+        return numero_file
+    except FileNotFoundError:
+        return -1  # Cartella non trovata
+    except Exception as e:
+        print(f"Si è verificato un errore: {e}")
+        return -1  # Altro errore
 
 def init():
     pwd = os.getcwd()
@@ -38,7 +49,7 @@ def init():
         ret, file = check_file_in_folder(list_files, folder)
         if not ret:
             unet.load_state_dict(torch.load(os.path.join(folder, "text_detection.pth"), map_location=torch.device('cpu')))
-            unet_setting.set(folder)
+            text_detection_setting.set(folder)
             messagebox.showinfo("Success", "UNET loaded")
                       
 
@@ -86,7 +97,7 @@ def exec_text_detection(i):
 
     result = unet(tensor_image_batched)
     res = torch.squeeze(result.detach().to(device))
-    res = (res>0.2).float()
+    res = (res>0.1).float()
 
     for i in range(3):
         masked_image[:, :, i] = (1 - np.array(res)) * np.array(masked_image[:, :, i])
@@ -115,23 +126,25 @@ def exec(option, canvas):
         messagebox.showerror("Error", f"Select a folder containing the generators file from the button \"Setting Inpainting\"")
         return 1
     if option == 1:
-        result, mask = exec_text_detection()
+        result, mask = exec_text_detection(i)
         im = Image.fromarray(result)
     elif option == 2:
-        res, mask = exec_text_detection() 
+        res, mask = exec_text_detection(i) 
         arr_pred=(np.array(mask)* 255).astype(np.uint8)
         mask = Image.fromarray(arr_pred)
-        maskered = gan.pre_processing(i, mask)
+        maskered = gan.pre_processing(i, mask)        
         result = gan(maskered)
-        im = transforms.ToPILImage()(result)
+        res = vutils.make_grid(result.detach(), normalize=True)
+        im = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
+        im = Image.fromarray(im)
     elif option == 3:
         maskered = gan.pre_processing(i, m)
         result = gan(maskered)
-        vutils.save_image(result.detach().cpu(), "imagina_nel_file.png", nrow=8, normalize=True, pad_value=0.3)
         res = vutils.make_grid(result.detach(), normalize=True)
         im = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
         im = Image.fromarray(im)
 
+    im.save(os.path.join("resrcs/generated", "image_" + str(conta_file_in_cartella("resrcs/generated") + 1) + ".png"))
     im = im.resize(canvas_size)
     image_tk = ImageTk.PhotoImage(im)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
@@ -236,14 +249,12 @@ def window_ex():
 
     global unet
     unet = UNetTextDetection()
-    global unet_setting
-    unet_setting = tk.StringVar()
     global gan_setting
     gan_setting = tk.StringVar()
     global text_detection_setting
     text_detection_setting = tk.StringVar()
     global gan
-    gan = TextAwareMultiGan(res=32)
+    gan = TextAwareMultiGan(res=256)
     global image
     image = tk.StringVar()
     global mask_image

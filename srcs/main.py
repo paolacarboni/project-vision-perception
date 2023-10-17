@@ -2,7 +2,7 @@ import sys
 import os
 import torch
 from interface import window_ex
-from textAwareMultiGan.training.train2 import train_gan
+from textAwareMultiGan.training.train import train_gan
 from textAwareMultiGan.training.test import analysis
 from textAwareMultiGan.training.datasets import create_datasets
 from textDetection.training.train import train_text
