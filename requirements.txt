@@ -3,3 +3,6 @@ torch
 torchvision
 tqdm
 opencv-python
+torchmetrics
+lpips
+matplotlib

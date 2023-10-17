@@ -14,9 +14,13 @@ run: $(VENV)/bin/activate
 test: $(VENV)/bin/activate
 	$(PYTHON) srcs/main.py test
 
-$(VENV)/bin/activate: requirements.txt
+install: requirements.txt
 	python3 -m venv $(VENV)
+	pip install urllib3==1.26.6
 	$(PIP) install -r requirements.txt
+
+$(VENV)/bin/activate:
+	python3 -m venv $(VENV)
 
 clean:
 	rm -rf __pycache__
