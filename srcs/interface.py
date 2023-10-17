@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from typing import Any
-from PIL import Image, ImageFilter, ImageTk
+from PIL import Image, ImageTk
 import os
 import torch
 import shutil
@@ -144,7 +144,7 @@ def exec(option, canvas):
         im = res.mul(255).add_(0.5).clamp_(0, 255).permute(1, 2, 0).to("cpu", torch.uint8).numpy()
         im = Image.fromarray(im)
 
-    im.save(os.path.join("resrcs/generated", "image_" + str(conta_file_in_cartella("resrcs/generated") + 1) + ".png"))
+    #im.save(os.path.join("resrcs/generated", "image_" + str(conta_file_in_cartella("resrcs/generated") + 1) + ".png"))
     im = im.resize(canvas_size)
     image_tk = ImageTk.PhotoImage(im)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
